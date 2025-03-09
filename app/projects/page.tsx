@@ -5,6 +5,8 @@ import { ProjectSkeleton } from "@/components/skeletons"
 import { ErrorBoundary } from "@/components/error-boundary"
 import { ErrorMessage } from "@/components/error-message"
 
+export const revalidate = 0
+
 export const metadata = {
   title: "Projects | Hyungyo Seo",
   description: "View my projects and work",
