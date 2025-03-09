@@ -1,0 +1,251 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 240 10% 3.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 240 10% 3.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 10% 3.9%;
+    --primary: 240 5.9% 10%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 240 4.8% 95.9%;
+    --secondary-foreground: 240 5.9% 10%;
+    --muted: 240 4.8% 95.9%;
+    --muted-foreground: 240 3.8% 46.1%;
+    --accent: 240 4.8% 95.9%;
+    --accent-foreground: 240 5.9% 10%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 5.9% 90%;
+    --input: 240 5.9% 90%;
+    --ring: 240 5.9% 10%;
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: 240 10% 3.9%;
+    --foreground: 0 0% 98%;
+    --card: 240 10% 3.9%;
+    --card-foreground: 0 0% 98%;
+    --popover: 240 10% 3.9%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 0 0% 98%;
+    --primary-foreground: 240 5.9% 10%;
+    --secondary: 240 3.7% 15.9%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 240 3.7% 15.9%;
+    --muted-foreground: 240 5% 64.9%;
+    --accent: 240 3.7% 15.9%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 3.7% 15.9%;
+    --input: 240 3.7% 15.9%;
+    --ring: 240 4.9% 83.9%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family:
+      var(--font-pretendard), -apple-system, BlinkMacSystemFont, system-ui, Roboto, "Helvetica Neue", "Segoe UI", "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", sans-serif;
+  }
+}
+
+@media print {
+  @page {
+    margin: 0;
+    size: auto;
+  }
+
+  body {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    margin: 0;
+    padding: 0;
+  }
+
+  nav,
+  button,
+  .print-hidden {
+    display: none !important;
+  }
+
+  .card {
+    box-shadow: none !important;
+    border: none !important;
+    background: transparent !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .container {
+    max-width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  main {
+    padding-top: 0 !important;
+  }
+}
+
+/* NProgress customization */
+#nprogress .bar {
+  background: hsl(var(--primary)) !important;
+  height: 3px;
+}
+
+/* Hide Notion database properties */
+.hide-notion-properties .notion-collection-page-properties,
+.hide-notion-properties .notion-page-property-value,
+.hide-notion-properties .notion-property-select,
+.hide-notion-properties .notion-property-multi_select,
+.hide-notion-properties .notion-property-relation,
+.hide-notion-properties .notion-property-formula,
+.hide-notion-properties .notion-property-title,
+.hide-notion-properties .notion-property-text,
+.hide-notion-properties .notion-property-checkbox,
+.hide-notion-properties .notion-property-url,
+.hide-notion-properties .notion-property-email,
+.hide-notion-properties .notion-property-phone_number,
+.hide-notion-properties .notion-property-number,
+.hide-notion-properties .notion-property-created_time,
+.hide-notion-properties .notion-property-last_edited_time,
+.hide-notion-properties .notion-property-date,
+.hide-notion-properties .notion-property-person,
+.hide-notion-properties .notion-property-file,
+.hide-notion-properties .notion-property-status,
+.hide-notion-properties .notion-collection-column-title {
+  display: none !important;
+}
+
+/* Hide Notion property rows */
+.hide-notion-properties .notion-collection-row {
+  display: none !important;
+}
+
+/* Disable heading link icons and make text selectable */
+.notion-h1,
+.notion-h2,
+.notion-h3,
+.notion-h4,
+.notion-h5 {
+  user-select: text !important;
+  pointer-events: auto !important;
+}
+
+.notion-h1 > a,
+.notion-h2 > a,
+.notion-h3 > a,
+.notion-h4 > a,
+.notion-h5 > a {
+  pointer-events: none !important;
+}
+
+.notion-h1 > a > span,
+.notion-h2 > a > span,
+.notion-h3 > a > span,
+.notion-h4 > a > span,
+.notion-h5 > a > span {
+  pointer-events: auto !important;
+}
+
+.notion-h1 > a::after,
+.notion-h2 > a::after,
+.notion-h3 > a::after,
+.notion-h4 > a::after,
+.notion-h5 > a::after {
+  display: none !important;
+}
+
+/* Notion-specific styles for dark mode */
+.dark .notion-container {
+  --notion-font: var(--font-pretendard), sans-serif !important;
+  --notion-max-width: 100%;
+  --notion-header-height: 0px;
+
+  --bg-color: transparent;
+  --fg-color: var(--foreground);
+  --fg-color-0: var(--foreground);
+  --fg-color-1: var(--muted-foreground);
+  --fg-color-2: var(--muted-foreground);
+  --fg-color-3: var(--muted-foreground);
+  --fg-color-4: var(--muted-foreground);
+  --fg-color-5: var(--muted-foreground);
+  --fg-color-6: var(--muted-foreground);
+
+  --bg-color-1: var(--card);
+  --bg-color-2: var(--muted);
+
+  --select-color-0: var(--primary);
+  --select-color-1: var(--primary);
+  --select-color-2: var(--primary);
+
+  --notion-red: var(--destructive);
+  --notion-pink: hsl(340, 82%, 60%);
+  --notion-blue: hsl(212, 100%, 70%);
+  --notion-purple: hsl(270, 80%, 70%);
+  --notion-teal: hsl(180, 80%, 50%);
+  --notion-yellow: hsl(50, 100%, 70%);
+  --notion-orange: hsl(30, 100%, 70%);
+  --notion-brown: hsl(20, 60%, 60%);
+  --notion-gray: var(--muted-foreground);
+
+  --notion-block-padding: 0;
+}
+
+.notion-container {
+  --notion-font: var(--font-pretendard), sans-serif !important;
+  --notion-max-width: 100%;
+  --notion-header-height: 0px;
+
+  --bg-color: transparent;
+  --fg-color: var(--foreground);
+  --fg-color-0: var(--foreground);
+  --fg-color-1: var(--muted-foreground);
+  --fg-color-2: var(--muted-foreground);
+  --fg-color-3: var(--muted-foreground);
+  --fg-color-4: var(--muted-foreground);
+  --fg-color-5: var(--muted-foreground);
+  --fg-color-6: var(--muted-foreground);
+
+  --bg-color-1: var(--card);
+  --bg-color-2: var(--muted);
+
+  --select-color-0: var(--primary);
+  --select-color-1: var(--primary);
+  --select-color-2: var(--primary);
+
+  --notion-red: var(--destructive);
+  --notion-pink: hsl(340, 82%, 45%);
+  --notion-blue: hsl(212, 100%, 45%);
+  --notion-purple: hsl(270, 80%, 50%);
+  --notion-teal: hsl(180, 80%, 40%);
+  --notion-yellow: hsl(50, 100%, 50%);
+  --notion-orange: hsl(30, 100%, 50%);
+  --notion-brown: hsl(20, 60%, 45%);
+  --notion-gray: var(--muted-foreground);
+
+  --notion-block-padding: 0;
+  user-select: text !important;
+}
+
+.notion-page {
+  padding: 0 !important;
+  margin: 0 !important;
+  width: 100%;
+}
+
+.notion-title {
+  display: none;
+}
+
