@@ -17,7 +17,7 @@ export default async function CVPage() {
     <div className="container py-8 md:py-12">
       <Card className="bg-card w-full rounded-lg shadow-lg overflow-hidden print:shadow-none print:border-none print:bg-transparent">
         <CardHeader className="bg-card flex flex-row items-center justify-between">
-          <h1 className="text-3xl md:text-4xl font-bold">Hyungyo Seo</h1>
+          <h1 className="text-3xl md:text-4xl font-bold">서현교</h1>
           <PrintButton className="print:hidden" />
         </CardHeader>
         <CardContent>

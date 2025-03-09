@@ -22,7 +22,7 @@ const navItems = [
     icon: FolderKanban,
   },
   {
-    name: "CV",
+    name: "CV (Korean)",
     href: "/cv",
     icon: FileText,
   },
