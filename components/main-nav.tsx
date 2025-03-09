@@ -37,17 +37,17 @@ const navItems = [
 const contactItems = [
   {
     name: "GitHub",
-    href: "https://github.com/hyungyoseo",
+    href: "https://github.com/hyunbridge",
     icon: Github,
   },
   {
     name: "LinkedIn",
-    href: "https://linkedin.com/in/hyungyoseo",
+    href: "https://www.linkedin.com/in/hgseo/",
     icon: Linkedin,
   },
   {
     name: "Email",
-    href: "mailto:contact@hyungyoseo.com",
+    href: "mailto:***REMOVED***",
     icon: Mail,
   },
 ]
