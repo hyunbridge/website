@@ -1,0 +1,43 @@
+name: Deploy to server
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Log in to Docker Hub
+        run: echo "${{ secrets.DOCKER_TOKEN }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+
+      - name: Build and Push Docker Image
+        run: |
+          IMAGE_NAME=${{ secrets.DOCKER_USERNAME }}/website:latest
+          docker build -t $IMAGE_NAME .
+          docker push $IMAGE_NAME
+
+      - name: Deploy to VM
+        uses: appleboy/ssh-action@v0.1.7
+        with:
+          host: ${{ secrets.VM_HOST }}
+          username: ${{ secrets.VM_USER }}
+          key: ${{ secrets.VM_SSH_KEY }}
+          script: |
+            docker login -u "${{ secrets.DOCKER_USERNAME }}" -p "${{ secrets.DOCKER_TOKEN }}"
+            docker pull ${{ secrets.DOCKER_USERNAME }}/website:latest
+            docker stop website || true
+            docker rm website || true
+            docker run -d \
+              --name website \
+              -p 3000:3000 \
+              -e NOTION_API_KEY=${{ secrets.NOTION_API_KEY }} \
+              -e NOTION_CV_PAGE_ID=${{ secrets.NOTION_CV_PAGE_ID }} \
+              -e NOTION_PROJECTS_DATABASE_ID=${{ secrets.NOTION_PROJECTS_DATABASE_ID }} \
+              --restart=always \
+              ${{ secrets.DOCKER_USERNAME }}/website:latest
