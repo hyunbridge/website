@@ -19,7 +19,8 @@ jobs:
       - name: Build and Push Docker Image
         run: |
           IMAGE_NAME=${{ secrets.DOCKER_USERNAME }}/website:latest
-          docker build -t $IMAGE_NAME .
+          docker build -t $IMAGE_NAME . \
+            --build-arg NEXT_PUBLIC_CLOUDFLARE_TURNSTILE_SITE_KEY=${{ secrets.NEXT_PUBLIC_CLOUDFLARE_TURNSTILE_SITE_KEY }}
           docker push $IMAGE_NAME
 
       - name: Deploy to VM
@@ -40,7 +41,6 @@ jobs:
               -e NOTION_CV_PAGE_ID=${{ secrets.NOTION_CV_PAGE_ID }} \
               -e NOTION_PROJECTS_DATABASE_ID=${{ secrets.NOTION_PROJECTS_DATABASE_ID }} \
               -e PROTECTED_EMAIL=${{ secrets.PROTECTED_EMAIL }} \
-              -e NEXT_PUBLIC_CLOUDFLARE_TURNSTILE_SITE_KEY=${{ secrets.NEXT_PUBLIC_CLOUDFLARE_TURNSTILE_SITE_KEY }} \
               -e CLOUDFLARE_TURNSTILE_SECRET_KEY=${{ secrets.CLOUDFLARE_TURNSTILE_SECRET_KEY }} \
               -e JWT_SECRET_KEY=${{ secrets.JWT_SECRET_KEY }} \
               --restart=always \
