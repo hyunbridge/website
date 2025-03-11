@@ -3,6 +3,12 @@ FROM node:22-alpine AS builder
 
 WORKDIR /app
 
+# Accept build arguments
+ARG NEXT_PUBLIC_CLOUDFLARE_TURNSTILE_SITE_KEY
+
+# Set environment variable
+ENV NEXT_PUBLIC_CLOUDFLARE_TURNSTILE_SITE_KEY=$NEXT_PUBLIC_CLOUDFLARE_TURNSTILE_SITE_KEY
+
 COPY package.json package-lock.json ./
 
 RUN npm ci
