@@ -2,13 +2,12 @@
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { motion } from "framer-motion"
-import { Home, FolderKanban, FileText, BookOpen, Menu, Github, Linkedin, Mail, MessageSquare } from "lucide-react"
+import { Home, FolderKanban, FileText, BookOpen, Menu, MessageSquare } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { useMobileMenu } from "@/hooks/use-mobile-menu"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 
 const navItems = [
   {
@@ -26,30 +25,17 @@ const navItems = [
     href: "/cv",
     icon: FileText,
   },
+  {
+    name: "Get in touch",
+    href: "/contact",
+    icon: MessageSquare,
+  },
   // {
   //   name: "Blog",
   //   href: "https://blog.example.com",
   //   icon: BookOpen,
   //   external: true,
   // },
-]
-
-const contactItems = [
-  {
-    name: "GitHub",
-    href: "https://github.com/hyunbridge",
-    icon: Github,
-  },
-  {
-    name: "LinkedIn",
-    href: "https://www.linkedin.com/in/hgseo/",
-    icon: Linkedin,
-  },
-  {
-    name: "Email",
-    href: "mailto:***REMOVED***",
-    icon: Mail,
-  },
 ]
 
 export function MainNav() {
@@ -100,36 +86,6 @@ export function MainNav() {
                 </button>
               )
             })}
-
-            {/* Get in touch dropdown */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button
-                  className={cn(
-                    "flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground relative",
-                    "text-muted-foreground",
-                  )}
-                >
-                  <MessageSquare className="h-4 w-4" />
-                  <span>Get in touch</span>
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                {contactItems.map((item) => (
-                  <DropdownMenuItem key={item.name} asChild>
-                    <a
-                      href={item.href}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-2 cursor-pointer"
-                    >
-                      <item.icon className="h-4 w-4" />
-                      <span>{item.name}</span>
-                    </a>
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
           </div>
 
           <div className="flex items-center gap-2">
@@ -165,42 +121,66 @@ function MobileMenu({ pathname, onNavigate }) {
       </div>
       <div className="flex-1 px-3">
         {navItems.map((item) => {
-          const isActive = pathname === item.href
+          const isActive =
+            pathname === item.href ||
+            (item.subItems &&
+              item.subItems.some(
+                (subItem) =>
+                  pathname === subItem.href ||
+                  pathname.startsWith(subItem.href + "/")
+              ));
+
+          if (item.subItems) {
+            return (
+              <div key={item.name} className="mb-2">
+                <button
+                  onClick={() => onNavigate(item.href)}
+                  className={cn(
+                    "flex items-center gap-3 w-full px-3 py-4 rounded-md text-base font-medium transition-colors hover:bg-accent hover:text-accent-foreground",
+                    isActive
+                      ? "bg-accent text-accent-foreground"
+                      : "text-muted-foreground"
+                  )}
+                >
+                  <item.icon className="h-5 w-5" />
+                  <span>{item.name}</span>
+                </button>
+                <div className="ml-8 mt-1 space-y-1">
+                  {item.subItems.map((subItem) => (
+                    <button
+                      key={subItem.name}
+                      onClick={() => onNavigate(subItem.href)}
+                      className={cn(
+                        "flex items-center w-full px-3 py-2 rounded-md text-sm transition-colors hover:bg-accent hover:text-accent-foreground",
+                        pathname === subItem.href
+                          ? "bg-accent/50 text-accent-foreground"
+                          : "text-muted-foreground"
+                      )}
+                    >
+                      {subItem.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            );
+          }
 
           return (
             <button
               key={item.name}
-              onClick={() => onNavigate(item.href, item.external)}
+              onClick={() => onNavigate(item.href)}
               className={cn(
                 "flex items-center gap-3 w-full px-3 py-4 rounded-md text-base font-medium transition-colors hover:bg-accent hover:text-accent-foreground",
-                isActive ? "bg-accent text-accent-foreground" : "text-muted-foreground",
+                isActive
+                  ? "bg-accent text-accent-foreground"
+                  : "text-muted-foreground"
               )}
             >
               <item.icon className="h-5 w-5" />
               <span>{item.name}</span>
-              {item.external && (
-                <span className="ml-auto text-xs bg-muted text-muted-foreground px-1.5 py-0.5 rounded">External</span>
-              )}
             </button>
           )
         })}
-
-        {/* Get in touch section in mobile menu */}
-        <div className="mt-4 px-3">
-          <h3 className="text-sm font-medium text-muted-foreground mb-2">Get in touch</h3>
-          {contactItems.map((item) => (
-            <a
-              key={item.name}
-              href={item.href}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-3 w-full px-3 py-3 rounded-md text-base font-medium transition-colors hover:bg-accent hover:text-accent-foreground text-muted-foreground"
-            >
-              <item.icon className="h-5 w-5" />
-              <span>{item.name}</span>
-            </a>
-          ))}
-        </div>
       </div>
 
       {/* Mobile Theme Toggle */}

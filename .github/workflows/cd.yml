@@ -39,5 +39,9 @@ jobs:
               -e NOTION_API_KEY=${{ secrets.NOTION_API_KEY }} \
               -e NOTION_CV_PAGE_ID=${{ secrets.NOTION_CV_PAGE_ID }} \
               -e NOTION_PROJECTS_DATABASE_ID=${{ secrets.NOTION_PROJECTS_DATABASE_ID }} \
+              -e PROTECTED_EMAIL=${{ secrets.PROTECTED_EMAIL }} \
+              -e NEXT_PUBLIC_CLOUDFLARE_TURNSTILE_SITE_KEY=${{ secrets.NEXT_PUBLIC_CLOUDFLARE_TURNSTILE_SITE_KEY }} \
+              -e CLOUDFLARE_TURNSTILE_SECRET_KEY=${{ secrets.CLOUDFLARE_TURNSTILE_SECRET_KEY }} \
+              -e JWT_SECRET_KEY=${{ secrets.JWT_SECRET_KEY }} \
               --restart=always \
               ${{ secrets.DOCKER_USERNAME }}/website:latest
