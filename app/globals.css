@@ -56,7 +56,7 @@
   body {
     @apply bg-background text-foreground;
     font-family:
-      var(--font-pretendard), -apple-system, BlinkMacSystemFont, system-ui, Roboto, "Helvetica Neue", "Segoe UI", "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", sans-serif;
+      Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, "Helvetica Neue", "Segoe UI", "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", sans-serif;
   }
 }
 
@@ -169,7 +169,7 @@
 
 /* Notion-specific styles for dark mode */
 .dark .notion-container {
-  --notion-font: var(--font-pretendard), sans-serif !important;
+  --notion-font: Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, "Helvetica Neue", "Segoe UI", "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", sans-serif !important;
   --notion-max-width: 100%;
   --notion-header-height: 0px;
 
@@ -204,7 +204,7 @@
 }
 
 .notion-container {
-  --notion-font: var(--font-pretendard), sans-serif !important;
+  --notion-font: Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, "Helvetica Neue", "Segoe UI", "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", sans-serif !important;
   --notion-max-width: 100%;
   --notion-header-height: 0px;
 
