@@ -84,6 +84,7 @@ export const getProjects = cache(async () => {
           const summary = extractRichText(page, "Summary") || ""
           const imageUrl = extractCoverImage(page) || "/placeholder.svg?height=400&width=600"
           const tags = extractMultiSelect(page, "Tags") || []
+          const slug = extractSlug(page) || pageId // Use slug if available, otherwise use pageId
 
           // Get links
           const githubUrl = extractUrl(page, "GitHub") || ""
@@ -105,6 +106,7 @@ export const getProjects = cache(async () => {
             tags: Array.isArray(tags) ? tags : [tags],
             recordMap,
             links,
+            slug,
           }
         } catch (err) {
           console.error(`Error processing project ${pageId}:`, err)
@@ -120,7 +122,69 @@ export const getProjects = cache(async () => {
   }
 })
 
-// Get projects by ID
+// Get project by slug
+export const getProjectBySlug = cache(async (slug: string) => {
+  if (!notionClient || !PROJECTS_DATABASE_ID) {
+    throw new Error("Notion API key or Projects database ID is not configured")
+  }
+
+  try {
+    // First, query the database to find the page with the matching slug
+    const response = await notionClient.databases.query({
+      database_id: PROJECTS_DATABASE_ID,
+      filter: {
+        property: "Slug",
+        rich_text: {
+          equals: slug,
+        },
+      },
+    })
+
+    if (response.results.length === 0) {
+      // If no project found with the slug, try to get by ID (for backward compatibility)
+      return getProjectById(slug)
+    }
+
+    const page = response.results[0]
+    const pageId = page.id
+
+    const recordMap = await getNotionPage(pageId)
+    if (!recordMap) {
+      throw new Error(`Failed to fetch project content for slug: ${slug}`)
+    }
+
+    const title = extractTitle(page) || "Untitled Project"
+    const description = extractRichText(page, "Description") || ""
+    const summary = extractRichText(page, "Summary") || ""
+    const imageUrl = extractCoverImage(page) || "/placeholder.svg?height=400&width=600"
+    const tags = extractMultiSelect(page, "Tags") || []
+    const extractedSlug = extractSlug(page) || pageId
+
+    const githubUrl = extractUrl(page, "GitHub") || ""
+    const demoUrl = extractUrl(page, "Demo") || ""
+
+    const links = []
+    if (githubUrl) links.push({ title: "GitHub", url: githubUrl })
+    if (demoUrl) links.push({ title: "Live Demo", url: demoUrl })
+
+    return {
+      id: pageId,
+      title,
+      description,
+      summary,
+      imageUrl,
+      tags: Array.isArray(tags) ? tags : [tags],
+      recordMap,
+      links,
+      slug: extractedSlug,
+    }
+  } catch (error) {
+    console.error(`Error fetching project by slug ${slug}:`, error)
+    throw error
+  }
+})
+
+// Get projects by ID (for backward compatibility)
 export const getProjectById = cache(async (projectId: string) => {
   if (!notionClient) {
     throw new Error("Notion API key is not configured")
@@ -142,6 +206,7 @@ export const getProjectById = cache(async (projectId: string) => {
     const summary = extractRichText(page, "Summary") || ""
     const imageUrl = extractCoverImage(page) || "/placeholder.svg?height=400&width=600"
     const tags = extractMultiSelect(page, "Tags") || []
+    const slug = extractSlug(page) || projectId
 
     const githubUrl = extractUrl(page, "GitHub") || ""
     const demoUrl = extractUrl(page, "Demo") || ""
@@ -159,6 +224,7 @@ export const getProjectById = cache(async (projectId: string) => {
       tags: Array.isArray(tags) ? tags : [tags],
       recordMap,
       links,
+      slug,
     }
   } catch (error) {
     console.error(`Error fetching project ${projectId}:`, error)
@@ -258,3 +324,28 @@ function extractCoverImage(page) {
   }
 }
 
+// Extract slug from the page properties
+function extractSlug(page) {
+  try {
+    // Check if the Slug property exists
+    if (!page.properties.Slug) {
+      return null
+    }
+
+    const slugProperty = page.properties.Slug
+
+    // Handle rich_text type for Slug property
+    if (
+      slugProperty.type === "rich_text" &&
+      Array.isArray(slugProperty.rich_text) &&
+      slugProperty.rich_text.length > 0
+    ) {
+      return slugProperty.rich_text.map((t) => t.plain_text).join("")
+    }
+
+    return null
+  } catch (error) {
+    console.error("Error extracting slug:", error)
+    return null
+  }
+}

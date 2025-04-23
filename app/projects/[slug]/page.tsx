@@ -1,14 +1,14 @@
 import { Suspense } from "react"
 import { notFound } from "next/navigation"
-import { getProjectById } from "@/lib/notion"
+import { getProjectBySlug } from "@/lib/notion"
 import { ProjectDetail } from "../project-detail"
-import { ProjectSkeleton } from "@/components/skeletons"
+import { ProjectDetailSkeleton } from "../project-detail-skeleton"
 import { ErrorBoundary } from "@/components/error-boundary"
 import { ErrorMessage } from "@/components/error-message"
 
 export async function generateMetadata({ params }) {
   try {
-    const project = await getProjectById(params.id)
+    const project = await getProjectBySlug(params.slug)
 
     return {
       title: `${project.title} | Hyungyo Seo`,
@@ -24,7 +24,7 @@ export async function generateMetadata({ params }) {
 
 export default function ProjectPage({ params }) {
   return (
-    <div className="container py-8 md:py-12">
+    <div className="w-full">
       <ErrorBoundary
         fallback={
           <ErrorMessage
@@ -33,17 +33,17 @@ export default function ProjectPage({ params }) {
           />
         }
       >
-        <Suspense fallback={<ProjectSkeleton />}>
-          <ProjectDetailWrapper id={params.id} />
+        <Suspense fallback={<ProjectDetailSkeleton />}>
+          <ProjectDetailWrapper slug={params.slug} />
         </Suspense>
       </ErrorBoundary>
     </div>
   )
 }
 
-async function ProjectDetailWrapper({ id }) {
+async function ProjectDetailWrapper({ slug }) {
   try {
-    const project = await getProjectById(id)
+    const project = await getProjectBySlug(slug)
 
     if (!project) {
       notFound()
@@ -59,4 +59,3 @@ async function ProjectDetailWrapper({ id }) {
     )
   }
 }
-

@@ -5,14 +5,23 @@ import { Badge } from "@/components/ui/badge"
 import { useRouter } from "next/navigation"
 import { ErrorMessage } from "@/components/error-message"
 import { AlertTriangle } from "lucide-react"
+import { useState } from "react"
 
 export function ProjectList({ projects, error }) {
   const router = useRouter()
+  const [isNavigating, setIsNavigating] = useState(false)
 
-  const handleProjectClick = (projectId) => {
+  const handleProjectClick = (project) => {
+    if (isNavigating) return
+
+    setIsNavigating(true)
+
+    // Use slug if available, otherwise use ID
+    const projectPath = project.slug || project.id
+
     // Prefetch the project detail page to make transition faster
-    router.prefetch(`/projects/${projectId}`)
-    router.push(`/projects/${projectId}`)
+    router.prefetch(`/projects/${projectPath}`)
+    router.push(`/projects/${projectPath}`)
   }
 
   if (error) {
@@ -44,8 +53,8 @@ export function ProjectList({ projects, error }) {
           whileTap={{ scale: 0.98 }}
         >
           <Card
-            className="h-full cursor-pointer hover:shadow-md transition-shadow overflow-hidden flex flex-col border border-border"
-            onClick={() => handleProjectClick(project.id)}
+            className={`h-full cursor-pointer hover:shadow-md transition-shadow overflow-hidden flex flex-col border border-border ${isNavigating ? "pointer-events-none" : ""}`}
+            onClick={() => handleProjectClick(project)}
           >
             <div className="relative h-48 w-full overflow-hidden">
               <motion.img
@@ -78,4 +87,3 @@ export function ProjectList({ projects, error }) {
     </div>
   )
 }
-
