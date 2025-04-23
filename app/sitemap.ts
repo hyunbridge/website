@@ -1,6 +1,8 @@
 import type { MetadataRoute } from "next"
 import { getProjects } from "@/lib/notion"
 
+export const revalidate = 3600  // 1 hour
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // 기본 URL 설정
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://hgseo.net"
