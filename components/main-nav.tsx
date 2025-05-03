@@ -1,4 +1,5 @@
 "use client"
+
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { motion } from "framer-motion"
@@ -26,16 +27,25 @@ const navItems = [
     icon: FileText,
   },
   {
+    name: "Blog",
+    href: "/blog",
+    icon: BookOpen,
+    subItems: [
+      {
+        name: "All Posts",
+        href: "/blog",
+      },
+      {
+        name: "All Tags",
+        href: "/blog/tags",
+      },
+    ],
+  },
+  {
     name: "Get in touch",
     href: "/contact",
     icon: MessageSquare,
   },
-  // {
-  //   name: "Blog",
-  //   href: "https://blog.example.com",
-  //   icon: BookOpen,
-  //   external: true,
-  // },
 ]
 
 export function MainNav() {

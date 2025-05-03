@@ -103,9 +103,9 @@ export function ProjectDetail({ project, isModal = false }) {
   }
 
   const content = (
-    <div className="relative min-h-screen" ref={containerRef}>
+    <div className="relative min-h-screen overflow-hidden" ref={containerRef} style={{ overscrollBehavior: 'none' }}>
       {/* Cover Image with parallax effect */}
-      <div className="fixed top-0 left-0 w-full h-[100vh] z-0 overflow-hidden">
+      <div className="fixed top-0 left-0 w-full h-[120vh] z-0 overflow-hidden">
         <motion.div
           className="w-full h-full"
           style={{
@@ -127,13 +127,13 @@ export function ProjectDetail({ project, isModal = false }) {
             className="absolute inset-0 bg-gradient-to-b from-transparent via-background/30 to-background"
             style={{
               opacity: gradientOpacity,
+              bottom: '-50px', // Extend gradient below
             }}
           />
         </motion.div>
       </div>
 
-      {/* Content Card - Scrolls over the image */}
-      <div className="relative min-h-screen pt-[70vh]">
+      <div className="relative min-h-screen pt-[70vh]" style={{ overscrollBehavior: 'contain' }}>
         {/* Scroll indicator arrow - Positioned above the content card */}
         <AnimatePresence>
           {!hasScrolled && (
@@ -160,7 +160,7 @@ export function ProjectDetail({ project, isModal = false }) {
 
         <motion.div
           ref={contentRef}
-          className="bg-card w-full rounded-t-3xl shadow-2xl overflow-hidden border border-border z-10 relative"
+          className="bg-card w-full rounded-t-3xl shadow-2xl overflow-hidden border border-border z-10 relative min-h-[80vh]"
           initial={{ opacity: 0, y: 100 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, delay: 0.2 }}
