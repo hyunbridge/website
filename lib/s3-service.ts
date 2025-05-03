@@ -1,3 +1,5 @@
+import { supabase } from "@/lib/supabase"
+
 export async function uploadToS3(file: File, postId?: string): Promise<string> {
   try {
     const fileName = postId ? `blog/${postId}/${Date.now()}-${file.name}` : `uploads/${Date.now()}-${file.name}`
@@ -24,11 +26,22 @@ export async function uploadToS3(file: File, postId?: string): Promise<string> {
 
 export async function deleteFromS3(keys: string[]): Promise<void> {
   try {
-    // Call the delete API route
+    // Fetch session & token from Supabase SDK for authentication
+    const {
+      data: { session },
+      error: sessionError,
+    } = await supabase.auth.getSession()
+    if (sessionError || !session?.access_token) {
+      throw new Error("Unauthorized: no valid session for delete operation")
+    }
+    const token = session.access_token
+
+    // Call the delete API route with Authorization header
     const response = await fetch("/api/s3/delete", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify({ keys }),
     })
@@ -45,18 +58,21 @@ export async function deleteFromS3(keys: string[]): Promise<void> {
 
 export async function getPresignedUrl(key: string, contentType: string): Promise<{ url: string; fileUrl: string }> {
   try {
-    // Fetch the token from localStorage
-    const token = localStorage.getItem("supabase.auth.token")
-
-    if (!token) {
-      throw new Error("No token found in localStorage")
+    // Fetch session & token from Supabase SDK
+    const {
+      data: { session },
+      error: sessionError,
+    } = await supabase.auth.getSession()
+    if (sessionError || !session?.access_token) {
+      throw new Error("Unauthorized: no valid session")
     }
+    const token = session.access_token
 
     const response = await fetch("/api/s3/presigned-url", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${JSON.parse(token).currentSession.access_token}`,
+        Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify({ key, contentType }),
     })
