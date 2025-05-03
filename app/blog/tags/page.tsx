@@ -7,6 +7,8 @@ export const metadata = {
   description: "Browse blog posts by tags",
 }
 
+export const revalidate = 60 // 1 minute
+
 export default async function BlogTagsPage() {
   return (
     <div className="container py-8 md:py-12">

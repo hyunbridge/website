@@ -9,6 +9,8 @@ export const metadata = {
   description: "Read my latest blog posts about web development, technology, and more.",
 }
 
+export const revalidate = 60 // 1 minute
+
 export default async function BlogPage() {
   const posts = await getPosts(1, 10, true)
 
