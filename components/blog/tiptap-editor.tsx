@@ -13,7 +13,6 @@ import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
 import { uploadToS3 } from "@/lib/s3-service"
-import { recordPostImage } from "@/lib/blog-service"
 import {
   Bold,
   Italic,
@@ -151,38 +150,26 @@ export function TiptapEditor({ content, onChange, postId, readOnly = false }: Ti
   )
 
   const handleImageUpload = useCallback(async () => {
-    if (!imageFile || !postId) {
-      console.error("Cannot upload image: No file or postId provided.");
-      return;
-    }
+    if (!imageFile || !postId) return
 
     try {
-      setIsUploading(true);
-      // Pass postId parameter
-      const fileUrl = await uploadToS3(imageFile, postId);
-
-      // Record the image in the database
-      try {
-        await recordPostImage(postId, fileUrl);
-        console.log("Image has been recorded in the database.");
-      } catch (recordError) {
-        console.error("Error recording image in database:", recordError);
-        console.log("Image will be displayed in the post but not recorded in the database.");
-      }
+      setIsUploading(true)
+      // Record is created inside uploadToS3, no extra call needed
+      const fileUrl = await uploadToS3(imageFile, postId)
 
       // Insert the image into the editor
-      editor?.chain().focus().setImage({ src: fileUrl, alt: "Blog image" }).run();
+      editor?.chain().focus().setImage({ src: fileUrl, alt: "Blog image" }).run()
 
-      setImageDialogOpen(false);
-      setImageFile(null);
-      setImageUrl("");
+      setImageDialogOpen(false)
+      setImageFile(null)
+      setImageUrl("")
     } catch (error) {
-      console.error("Error uploading image:", error);
-      alert("Failed to upload image.");
+      console.error("Error uploading image:", error)
+      alert("Failed to upload image.")
     } finally {
-      setIsUploading(false);
+      setIsUploading(false)
     }
-  }, [editor, imageFile, postId]);
+  }, [editor, imageFile, postId])
 
   const handleImageUrlInsert = useCallback(() => {
     if (!imageUrl) return

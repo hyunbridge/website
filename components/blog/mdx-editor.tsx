@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
 import { uploadToS3 } from "@/lib/s3-service"
-import { recordPostImage } from "@/lib/blog-service"
 import {
   Bold,
   Italic,
@@ -130,10 +129,8 @@ export function MDXEditor({ content, onChange, postId, readOnly = false }: MDXEd
 
     try {
       setIsUploading(true)
-      const fileUrl = await uploadToS3(imageFile)
-
-      // Record the image in the database
-      await recordPostImage(postId, fileUrl)
+      // Record is created inside uploadToS3, no extra call needed
+      const fileUrl = await uploadToS3(imageFile, postId)
 
       // Insert the image markdown
       insertTextAtCursor(`![Image](${fileUrl})`)
