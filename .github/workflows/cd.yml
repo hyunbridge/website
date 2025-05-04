@@ -26,7 +26,11 @@ jobs:
             --build-arg NEXT_PUBLIC_S3_REGION=${{ secrets.NEXT_PUBLIC_S3_REGION }} \
             --build-arg NEXT_PUBLIC_S3_ENDPOINT=${{ secrets.NEXT_PUBLIC_S3_ENDPOINT }} \
             --build-arg NEXT_PUBLIC_SUPABASE_ANON_KEY=${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }} \
-            --build-arg NEXT_PUBLIC_SUPABASE_URL=${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+            --build-arg NEXT_PUBLIC_SUPABASE_URL=${{ secrets.NEXT_PUBLIC_SUPABASE_URL }} \
+            --build-arg NEXT_PUBLIC_GISCUS_REPO=${{ secrets.NEXT_PUBLIC_GISCUS_REPO }} \
+            --build-arg NEXT_PUBLIC_GISCUS_REPO_ID=${{ secrets.NEXT_PUBLIC_GISCUS_REPO_ID }} \
+            --build-arg NEXT_PUBLIC_GISCUS_CATEGORY=${{ secrets.NEXT_PUBLIC_GISCUS_CATEGORY }} \
+            --build-arg NEXT_PUBLIC_GISCUS_CATEGORY_ID=${{ secrets.NEXT_PUBLIC_GISCUS_CATEGORY_ID }}
           docker push $IMAGE_NAME
 
       - name: Deploy to VM
@@ -57,5 +61,9 @@ jobs:
               -e S3_ACCESS_KEY=${{ secrets.S3_ACCESS_KEY }} \
               -e NEXT_PUBLIC_SUPABASE_ANON_KEY=${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }} \
               -e NEXT_PUBLIC_SUPABASE_URL=${{ secrets.NEXT_PUBLIC_SUPABASE_URL }} \
+              -e NEXT_PUBLIC_GISCUS_REPO=${{ secrets.NEXT_PUBLIC_GISCUS_REPO }} \
+              -e NEXT_PUBLIC_GISCUS_REPO_ID=${{ secrets.NEXT_PUBLIC_GISCUS_REPO_ID }} \
+              -e NEXT_PUBLIC_GISCUS_CATEGORY=${{ secrets.NEXT_PUBLIC_GISCUS_CATEGORY }} \
+              -e NEXT_PUBLIC_GISCUS_CATEGORY_ID=${{ secrets.NEXT_PUBLIC_GISCUS_CATEGORY_ID }} \
               --restart=always \
               ${{ secrets.DOCKER_USERNAME }}/website:latest

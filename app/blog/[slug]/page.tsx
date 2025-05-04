@@ -171,7 +171,7 @@ export default function BlogPostPage({ params }: { params: { slug: string } }) {
             {post.content && <TiptapEditor content={post.content} onChange={() => {}} readOnly />}
           </div>
 
-          {post.enable_comments && <Comments slug={post.slug} />}
+          {post.enable_comments && <Comments postId={post.id} />}
         </div>
     )
   }
@@ -289,7 +289,7 @@ export default function BlogPostPage({ params }: { params: { slug: string } }) {
                   {post.content && <TiptapEditor content={post.content} onChange={() => {}} readOnly />}
                 </div>
 
-                {post.enable_comments && <Comments slug={post.slug} />}
+                {post.enable_comments && <Comments postId={post.id} />}
               </div>
             </div>
           </motion.div>
