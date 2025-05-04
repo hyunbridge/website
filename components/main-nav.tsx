@@ -22,11 +22,6 @@ const navItems = [
     icon: FolderKanban,
   },
   {
-    name: "CV (Korean)",
-    href: "/cv",
-    icon: FileText,
-  },
-  {
     name: "Blog",
     href: "/blog",
     icon: BookOpen,
@@ -40,6 +35,11 @@ const navItems = [
         href: "/blog/tags",
       },
     ],
+  },
+  {
+    name: "CV (Korean)",
+    href: "/cv",
+    icon: FileText,
   },
   {
     name: "Get in touch",
