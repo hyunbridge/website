@@ -53,7 +53,7 @@ CREATE TABLE IF NOT EXISTS public.profiles (
     CONSTRAINT profiles_id_fkey FOREIGN KEY (id) REFERENCES auth.users(id) ON DELETE CASCADE -- If the auth user is deleted, delete the profile too
     ) TABLESPACE pg_default;
 
-COMMENT ON TABLE public.profiles IS 'Stores user profile information linked to Supabase Auth.';
+COMMENT ON TABLE public.profiles IS 'Stores user profile information linked to Supabase Auth. Direct SELECT access is restricted by RLS.';
 
 -- Posts Table: Stores blog post content and metadata.
 CREATE TABLE IF NOT EXISTS public.posts (
@@ -63,7 +63,7 @@ CREATE TABLE IF NOT EXISTS public.posts (
     title text NOT NULL, -- Title of the blog post
     slug text NOT NULL, -- Unique, URL-friendly identifier for the post
     content text NOT NULL, -- Main content of the blog post (e.g., Markdown, HTML)
-    author_id uuid NOT NULL, -- Foreign Key referencing the author's profile
+    author_id uuid NOT NULL, -- Foreign Key referencing the author's profile (use secure_profiles view for public display)
     summary text NOT NULL, -- A short summary or excerpt of the post
     cover_image text NULL, -- URL for the post's cover image (optional)
     is_published boolean NOT NULL DEFAULT false, -- Flag indicating if the post is publicly visible
@@ -200,9 +200,11 @@ CREATE TRIGGER on_auth_user_created
 -- RLS for 'profiles' table
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Public profiles are viewable by everyone."
+-- Restrict direct access to the profiles table to the owner only.
+-- Use the 'secure_profiles' view for public access to non-sensitive data.
+CREATE POLICY "Users can only view their own profile."
   ON public.profiles FOR SELECT
-                                    USING (true); -- Anyone can view any profile
+                                    USING (auth.uid() = id); -- Only profile owner can view the raw profile data
 
 CREATE POLICY "Users can insert their own profile."
   ON public.profiles FOR INSERT
@@ -345,3 +347,26 @@ USING (
   );
 
 COMMENT ON TABLE public.post_versions IS 'Tracks the history of changes (versions) for each blog post. RLS allows authors to insert/delete versions and view versions of their own posts.';
+
+-- Section 7: Security Views for Column Level Protection
+-- -----------------------------------------
+-- Create a secure view that excludes sensitive information from profiles
+
+-- Create a view that only exposes non-sensitive profile data
+CREATE OR REPLACE VIEW public.secure_profiles AS
+SELECT
+    p.id,
+    p.full_name,
+    p.avatar_url
+FROM
+    public.profiles p;
+
+-- Add comment to explain the secure_profiles view
+COMMENT ON VIEW public.secure_profiles IS 'A secure view of profiles that excludes sensitive information like username (potentially email addresses). This view should be used for public display of author information.';
+
+-- Grant access to the secure view for authenticated and anonymous users
+GRANT SELECT ON public.secure_profiles TO authenticated, anon;
+
+-- Note: Ensure your application queries (e.g., fetching posts with author info)
+-- join with 'secure_profiles' instead of 'profiles' for public data display.
+-- Example: SELECT p.*, sp.full_name, sp.avatar_url FROM posts p JOIN secure_profiles sp ON p.author_id = sp.id;

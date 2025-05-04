@@ -159,6 +159,15 @@ export interface Database {
     }
     Views: {
       [_ in never]: never
+      secure_profiles: {
+        Row: {
+          id: string
+          full_name: string | null
+          avatar_url: string | null
+        }
+        Insert: never
+        Update: never
+      }
     }
     Functions: {
       [_ in never]: never

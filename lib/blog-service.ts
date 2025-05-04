@@ -15,7 +15,6 @@ export type Post = {
   enable_comments: boolean
   tags?: Tag[]
   author?: {
-    username: string
     full_name: string
     avatar_url: string | null
   }
@@ -68,7 +67,7 @@ export async function getPosts(page = 1, pageSize = 10, isPublished = true) {
     .select(
       `
       *,
-      author:author_id(username, full_name, avatar_url),
+      author:secure_profiles!author_id(id, full_name, avatar_url), 
       tags:post_tags(tag_id, tags(id, name, slug))
     `,
     )
@@ -103,7 +102,7 @@ export async function getPostBySlug(slug: string) {
     .select(
       `
     *,
-    author:author_id(username, full_name, avatar_url),
+    author:secure_profiles!author_id(id, full_name, avatar_url), 
     tags:post_tags(tag_id, tags(id, name, slug))
   `,
     )
@@ -132,7 +131,7 @@ export async function getPostById(id: string) {
     .select(
       `
     *,
-    author:author_id(username, full_name, avatar_url),
+    author:author_id(full_name, avatar_url),
     tags:post_tags(tag_id, tags(id, name, slug))
   `,
     )
@@ -172,7 +171,7 @@ export async function getPostsByTag(tagSlug: string, page = 1, pageSize = 10) {
     .select(
       `
     *,
-    author:author_id(username, full_name, avatar_url),
+    author:secure_profiles!author_id(id, full_name, avatar_url), 
     tags:post_tags(tag_id, tags(id, name, slug))
   `,
     )
@@ -231,8 +230,7 @@ export async function getPostsByTagId(tagId: string, page = 1, pageSize = 10, on
     // Get the posts corresponding to these post_ids
     let query = supabase
       .from("posts")
-      .select("*, author:author_id(username, full_name, avatar_url), tags:post_tags(tag_id, tags(id, name, slug))")
-      .in("id", postIds)
+      .select("*, author:secure_profiles!author_id(id, full_name, avatar_url), tags:post_tags(tag_id, tags(id, name, slug))")
 
     if (onlyPublished) {
       query = query.eq("is_published", true)

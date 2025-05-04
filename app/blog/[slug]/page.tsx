@@ -114,6 +114,9 @@ export default function BlogPostPage({ params }: { params: { slug: string } }) {
     notFound()
   }
 
+  // Display author name or Anonymous as fallback
+  const authorName = post.author?.full_name || "Anonymous"
+
   const publishedDate = post.published_at ? new Date(post.published_at) : new Date(post.created_at)
   const formattedDate = format(publishedDate, "MMMM d, yyyy")
 
@@ -137,15 +140,15 @@ export default function BlogPostPage({ params }: { params: { slug: string } }) {
               {post.author?.avatar_url ? (
                   <img
                       src={post.author.avatar_url || "/placeholder.svg"}
-                      alt={post.author.full_name || post.author.username}
+                      alt={authorName}
                       className="w-8 h-8 rounded-full"
                   />
               ) : (
                   <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
-                    {(post.author?.full_name || post.author?.username || "A")[0].toUpperCase()}
+                    {(authorName)[0].toUpperCase()}
                   </div>
               )}
-              <span className="text-sm">{post.author?.full_name || post.author?.username || "Anonymous"}</span>
+              <span className="text-sm">{authorName}</span>
             </div>
 
             <span className="text-sm text-muted-foreground">{formattedDate}</span>
@@ -255,15 +258,15 @@ export default function BlogPostPage({ params }: { params: { slug: string } }) {
                     {post.author?.avatar_url ? (
                         <img
                             src={post.author.avatar_url || "/placeholder.svg"}
-                            alt={post.author.full_name || post.author.username}
+                            alt={authorName}
                             className="w-8 h-8 rounded-full"
                         />
                     ) : (
                         <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
-                          {(post.author?.full_name || post.author?.username || "A")[0].toUpperCase()}
+                          {(authorName)[0].toUpperCase()}
                         </div>
                     )}
-                    <span className="text-sm">{post.author?.full_name || post.author?.username || "Anonymous"}</span>
+                    <span className="text-sm">{authorName}</span>
                   </div>
 
                   <span className="text-sm text-muted-foreground">{formattedDate}</span>
