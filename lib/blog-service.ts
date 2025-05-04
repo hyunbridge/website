@@ -48,7 +48,7 @@ export async function getRecentPosts(limit = 5) {
   const { data, error } = await supabase
     .from("blog_posts")
     .select("id, title, slug, created_at")
-    .order("created_at", { ascending: false })
+    .order("published_at", { ascending: false })
     .limit(limit)
 
   if (error) {
@@ -71,7 +71,7 @@ export async function getPosts(page = 1, pageSize = 10, isPublished = true) {
       tags:post_tags(tag_id, tags(id, name, slug))
     `,
     )
-    .order("created_at", { ascending: false })
+    .order("published_at", { ascending: false })
     .range(startIndex, startIndex + pageSize - 1)
 
   if (isPublished) {
@@ -185,7 +185,7 @@ export async function getPostsByTag(tagSlug: string, page = 1, pageSize = 10) {
         .range(startIndex, startIndex + pageSize - 1),
     )
     .eq("is_published", true)
-    .order("created_at", { ascending: false })
+    .order("published_at", { ascending: false })
 
   if (error) {
     console.error("Error fetching posts by tag:", error)
@@ -237,7 +237,7 @@ export async function getPostsByTagId(tagId: string, page = 1, pageSize = 10, on
     }
 
     const { data: posts, error } = await query
-      .order("created_at", { ascending: false })
+      .order("published_at", { ascending: false })
       .range((page - 1) * pageSize, page * pageSize - 1)
 
     if (error) throw error

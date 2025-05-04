@@ -15,7 +15,7 @@ export interface Database {
           summary: string
           cover_image: string | null
           is_published: boolean
-          published_at: string | null
+          published_at: string
           enable_comments: boolean
         }
         Insert: {
@@ -29,7 +29,7 @@ export interface Database {
           summary: string
           cover_image?: string | null
           is_published?: boolean
-          published_at?: string | null
+          published_at?: string
           enable_comments?: boolean
         }
         Update: {
@@ -43,7 +43,7 @@ export interface Database {
           summary?: string
           cover_image?: string | null
           is_published?: boolean
-          published_at?: string | null
+          published_at?: string
           enable_comments?: boolean
         }
       }

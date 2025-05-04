@@ -67,11 +67,11 @@ CREATE TABLE IF NOT EXISTS public.posts (
     summary text NOT NULL, -- A short summary or excerpt of the post
     cover_image text NULL, -- URL for the post's cover image (optional)
     is_published boolean NOT NULL DEFAULT false, -- Flag indicating if the post is publicly visible
-    published_at timestamp with time zone NULL, -- Timestamp when the post was published (NULL if not published)
-                             enable_comments boolean NOT NULL DEFAULT true, -- Flag to enable/disable comments on the post
+    published_at timestamp with time zone NOT NULL DEFAULT now(), -- Timestamp when the post was published
+    enable_comments boolean NOT NULL DEFAULT true, -- Flag to enable/disable comments on the post
 
-                             -- Constraints
-                             CONSTRAINT posts_pkey PRIMARY KEY (id),
+    -- Constraints
+    CONSTRAINT posts_pkey PRIMARY KEY (id),
     CONSTRAINT posts_slug_key UNIQUE (slug),
     CONSTRAINT posts_author_id_fkey FOREIGN KEY (author_id) REFERENCES public.profiles(id) ON DELETE CASCADE -- If the author's profile is deleted, delete their posts too
     ) TABLESPACE pg_default;
