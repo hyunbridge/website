@@ -42,10 +42,23 @@ FROM node:22-alpine AS runner
 
 WORKDIR /app
 
-# Runtime environment variables will be provided via docker run -e flags
-ENV NODE_ENV=production
+# Install Chromium and dependencies for Puppeteer
+RUN apk add --no-cache \
+    chromium \
+    nss \
+    freetype \
+    harfbuzz \
+    ca-certificates \
+    ttf-freefont \
+    dbus \
+    fontconfig
 
-# Remove devDependencies
+# Tell Puppeteer to skip installing Chrome and use the installed Chromium
+ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
+    PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser \
+    NODE_ENV=production
+
+# Runtime environment variables will be provided via docker run -e flags
 COPY package.json package-lock.json ./
 RUN npm ci --only=production
 

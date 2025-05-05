@@ -1,0 +1,25 @@
+@page {
+  margin: 1cm;
+}
+
+@media print {
+  /* Prevent section breaks within headings of all levels */
+  .print-section-h1,
+  .print-section-h2,
+  .print-section-h3,
+  .print-section-h4,
+  .print-section-h5,
+  .print-section-h6 {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  /* Prevent breaks within paragraphs, code blocks, tables, etc. */
+  .notion-container p,
+  .notion-container pre,
+  .notion-container table,
+  .notion-container code {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+}

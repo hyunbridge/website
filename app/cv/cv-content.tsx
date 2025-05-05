@@ -1,9 +1,10 @@
 "use client"
 
+import "./cv-print.css"
 import { NotionRenderer } from "react-notion-x"
 import { ErrorMessage } from "@/components/error-message"
 import "react-notion-x/src/styles.css"
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import { browserNotionClient } from "@/lib/notion-client-browser"
 import { CVSkeleton } from "./cv-skeleton"
 
@@ -15,7 +16,6 @@ import Link from "next/link"
 // Dynamically import Prism.js to fix the "Prism is not defined" error
 import "prismjs/themes/prism.css"
 import "prismjs"
-// Additional Prism components for line numbers and other features
 import "prismjs/components/prism-bash"
 import "prismjs/components/prism-javascript"
 import "prismjs/components/prism-typescript"
@@ -37,34 +37,22 @@ export function CVContent({ cv, isDirectAccess = false }) {
   const [mounted, setMounted] = useState(false)
   const [clientCv, setClientCv] = useState(cv)
   const [loading, setLoading] = useState(!isDirectAccess)
-  const [error, setError] = useState(null)
+  const [error, setError] = useState<string | null>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
 
-  // Client-side fetch for CV data when navigating from another page
   useEffect(() => {
     setMounted(true)
 
-    // If we already have the CV data from SSR, don't fetch again
     if (isDirectAccess && cv) return
 
     async function fetchCVData() {
       try {
         setLoading(true)
-        // Get the CV page ID from environment variable
         const cvPageId = process.env.NEXT_NOTION_CV_PAGE_ID
-
-        if (!cvPageId) {
-          throw new Error("CV page ID not found")
-        }
-
-        // Use the browser-safe Notion client to fetch the page
+        if (!cvPageId) throw new Error("CV page ID not found")
         const recordMap = await browserNotionClient.getPage(cvPageId)
-
-        setClientCv({
-          pageId: cvPageId,
-          recordMap,
-        })
+        setClientCv({ pageId: cvPageId, recordMap })
       } catch (err) {
-        console.error("Error loading CV:", err)
         setError("Failed to load CV content. Please try again later.")
       } finally {
         setLoading(false)
@@ -75,6 +63,44 @@ export function CVContent({ cv, isDirectAccess = false }) {
       fetchCVData()
     }
   }, [cv, isDirectAccess])
+
+  // Group each Heading and its content until the next Heading or HR into one section
+  useEffect(() => {
+    if (!mounted) return
+    const container = containerRef.current
+    if (!container) return
+
+    const elements = Array.from(container.children)
+    container.innerHTML = ""
+    
+    let sectionDiv: HTMLDivElement | null = null
+
+    elements.forEach((el) => {
+      const tag = el.tagName
+      
+      // Start a new section when encountering a Heading
+      if (/^H[1-6]$/.test(tag)) {
+        const level = tag[1]
+        sectionDiv = document.createElement("div")
+        sectionDiv.className = `print-section-h${level}`
+        container.appendChild(sectionDiv)
+        sectionDiv.appendChild(el)
+      }
+      // End the current section when encountering an HR
+      else if (tag === "HR") {
+        container.appendChild(el)
+        sectionDiv = null
+      } 
+      // Add to current section if one exists
+      else if (sectionDiv) {
+        sectionDiv.appendChild(el)
+      } 
+      // Add directly to container if no section is active
+      else {
+        container.appendChild(el)
+      }
+    })
+  }, [mounted])
 
   const isDarkMode = mounted && document.documentElement.classList.contains("dark")
   const currentCv = clientCv || cv
@@ -91,27 +117,21 @@ export function CVContent({ cv, isDirectAccess = false }) {
     return <ErrorMessage title="CV not found" message="The CV content could not be loaded." />
   }
 
-  // If we have a Notion record map, render it with NotionRenderer
   if (mounted) {
     const lastEdited = () => {
-      const pageId = Object.keys(currentCv.recordMap.block)[0] // First block is the page block
+      const pageId = Object.keys(currentCv.recordMap.block)[0]
       const lastEditedTimestamp = currentCv.recordMap.block[pageId]?.value?.last_edited_time
-
       if (!lastEditedTimestamp) return "Unknown"
-
-      // Format date as "17 Dec 2024"
       const date = new Date(lastEditedTimestamp)
-      const formattedDate = date.toLocaleDateString("en-GB", {
+      return date.toLocaleDateString("en-GB", {
         day: "numeric",
         month: "short",
         year: "numeric",
       })
-
-      return formattedDate
     }
 
     return (
-      <div className="notion-container print:notion-container dark:text-white">
+      <div ref={containerRef} className="notion-container print:notion-container dark:text-white">
         <NotionRenderer
           recordMap={currentCv.recordMap}
           fullPage={false}
@@ -123,7 +143,6 @@ export function CVContent({ cv, isDirectAccess = false }) {
             Collection,
             Equation,
           }}
-          // Use mapPageUrl to handle Notion links properly
           mapPageUrl={(pageId) => `/cv?id=${pageId}`}
         />
         <p className="text-sm italic text-muted-foreground">Last updated on {lastEdited()}.</p>
@@ -133,4 +152,3 @@ export function CVContent({ cv, isDirectAccess = false }) {
 
   return <CVSkeleton />
 }
-

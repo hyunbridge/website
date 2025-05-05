@@ -2,7 +2,7 @@ import { Suspense } from "react"
 import { getCVData } from "@/lib/notion"
 import { CVContent } from "./cv-content"
 import { CVSkeleton } from "./cv-skeleton"
-import { PrintButton } from "./print-button"
+import { DownloadButton } from "./download-button"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { ErrorBoundary } from "@/components/error-boundary"
 import { ErrorMessage } from "@/components/error-message"
@@ -21,7 +21,7 @@ export default async function CVPage() {
       <div className="md:hidden">
         <div className="flex flex-row items-center justify-between">
           <h1 className="text-3xl md:text-4xl font-bold">서현교</h1>
-          <PrintButton className="print:hidden" />
+          <DownloadButton className="print:hidden" />
         </div>
         <ErrorBoundary
           fallback={
@@ -42,7 +42,7 @@ export default async function CVPage() {
         <Card className="bg-card w-full rounded-lg shadow-lg overflow-hidden print:shadow-none print:border-none print:bg-transparent">
           <CardHeader className="bg-card flex flex-row items-center justify-between">
             <h1 className="text-3xl md:text-4xl font-bold">서현교</h1>
-            <PrintButton className="print:hidden" />
+            <DownloadButton className="print:hidden" />
           </CardHeader>
           <CardContent>
             <ErrorBoundary

@@ -68,6 +68,7 @@
     "notion-client": "latest",
     "nprogress": "latest",
     "prismjs": "latest",
+    "puppeteer": "^24.8.0",
     "react": "^19",
     "react-day-picker": "9.0.0",
     "react-dom": "^19",
