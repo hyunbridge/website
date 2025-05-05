@@ -17,26 +17,49 @@ export const metadata = {
 export default async function CVPage() {
   return (
     <div className="container py-8 md:py-12">
-      <Card className="bg-card w-full rounded-lg shadow-lg overflow-hidden print:shadow-none print:border-none print:bg-transparent">
-        <CardHeader className="bg-card flex flex-row items-center justify-between">
+      {/* Mobile: display without card */}
+      <div className="md:hidden">
+        <div className="flex flex-row items-center justify-between">
           <h1 className="text-3xl md:text-4xl font-bold">서현교</h1>
           <PrintButton className="print:hidden" />
-        </CardHeader>
-        <CardContent>
-          <ErrorBoundary
-            fallback={
-              <ErrorMessage
-                title="Failed to load CV"
-                message="There was an error loading the CV. Please check your Notion configuration or try again later."
-              />
-            }
-          >
-            <Suspense fallback={<CVSkeleton />}>
-              <CVContentWrapper />
-            </Suspense>
-          </ErrorBoundary>
-        </CardContent>
-      </Card>
+        </div>
+        <ErrorBoundary
+          fallback={
+            <ErrorMessage
+              title="Failed to load CV"
+              message="There was an error loading the CV. Please check your Notion configuration or try again later."
+            />
+          }
+        >
+          <Suspense fallback={<CVSkeleton />}>
+            <CVContentWrapper />
+          </Suspense>
+        </ErrorBoundary>
+      </div>
+
+      {/* Desktop: uses card layout */}
+      <div className="hidden md:block">
+        <Card className="bg-card w-full rounded-lg shadow-lg overflow-hidden print:shadow-none print:border-none print:bg-transparent">
+          <CardHeader className="bg-card flex flex-row items-center justify-between">
+            <h1 className="text-3xl md:text-4xl font-bold">서현교</h1>
+            <PrintButton className="print:hidden" />
+          </CardHeader>
+          <CardContent>
+            <ErrorBoundary
+              fallback={
+                <ErrorMessage
+                  title="Failed to load CV"
+                  message="There was an error loading the CV. Please check your Notion configuration or try again later."
+                />
+              }
+            >
+              <Suspense fallback={<CVSkeleton />}>
+                <CVContentWrapper />
+              </Suspense>
+            </ErrorBoundary>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   )
 }
@@ -47,11 +70,10 @@ async function CVContentWrapper() {
     return <CVContent cv={cv} isDirectAccess={true} />
   } catch (error) {
     return (
-      <ErrorMessage
-        title="Failed to load CV"
-        message={error instanceof Error ? error.message : "An unknown error occurred"}
-      />
+        <ErrorMessage
+            title="Failed to load CV"
+            message={error instanceof Error ? error.message : "An unknown error occurred"}
+        />
     )
   }
 }
-
