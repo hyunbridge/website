@@ -13,13 +13,20 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v3
 
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
       - name: Log in to Docker Hub
         run: echo "${{ secrets.DOCKER_TOKEN }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
 
       - name: Build and Push Docker Image
         run: |
           IMAGE_NAME=${{ secrets.DOCKER_USERNAME }}/website:latest
-          docker build -t $IMAGE_NAME . \
+          docker buildx build --platform linux/amd64,linux/arm64 -t $IMAGE_NAME . \
+            --push \
             --build-arg NEXT_PUBLIC_CLOUDFLARE_TURNSTILE_SITE_KEY=${{ secrets.NEXT_PUBLIC_CLOUDFLARE_TURNSTILE_SITE_KEY }} \
             --build-arg NEXT_PUBLIC_S3_CDN_URL=${{ secrets.NEXT_PUBLIC_S3_CDN_URL }} \
             --build-arg NEXT_PUBLIC_S3_BUCKET=${{ secrets.NEXT_PUBLIC_S3_BUCKET }} \
@@ -31,7 +38,6 @@ jobs:
             --build-arg NEXT_PUBLIC_GISCUS_REPO_ID=${{ secrets.NEXT_PUBLIC_GISCUS_REPO_ID }} \
             --build-arg NEXT_PUBLIC_GISCUS_CATEGORY=${{ secrets.NEXT_PUBLIC_GISCUS_CATEGORY }} \
             --build-arg NEXT_PUBLIC_GISCUS_CATEGORY_ID=${{ secrets.NEXT_PUBLIC_GISCUS_CATEGORY_ID }}
-          docker push $IMAGE_NAME
 
       - name: Deploy to VM
         uses: appleboy/ssh-action@v0.1.7

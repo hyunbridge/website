@@ -1,5 +1,5 @@
 # Build stage
-FROM node:22-alpine AS builder
+FROM --platform=$BUILDPLATFORM node:22-alpine AS builder
 
 WORKDIR /app
 
@@ -38,11 +38,11 @@ RUN npm run build
 
 
 # Run stage
-FROM node:22-alpine AS runner
+FROM --platform=$TARGETPLATFORM node:22-alpine AS runner
 
 WORKDIR /app
 
-# Install Chromium and dependencies for Puppeteer
+# Install Chromium and dependencies for Puppeteer with arch-specific options
 RUN apk add --no-cache \
     chromium \
     nss \
@@ -53,10 +53,11 @@ RUN apk add --no-cache \
     dbus \
     fontconfig
 
-# Tell Puppeteer to skip installing Chrome and use the installed Chromium
+# ARM-specific optimizations and Puppeteer settings
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
     PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser \
-    NODE_ENV=production
+    NODE_ENV=production \
+    PUPPETEER_CACHE_DIR=/app/.cache/puppeteer
 
 # Runtime environment variables will be provided via docker run -e flags
 COPY package.json package-lock.json ./
@@ -66,6 +67,12 @@ RUN npm ci --only=production
 COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/next.config.mjs ./next.config.mjs
+
+# Create necessary cache directories for Puppeteer
+RUN mkdir -p /app/.cache/puppeteer && chown -R node:node /app
+
+# Switch to non-root user for better security
+USER node
 
 EXPOSE 3000
 
