@@ -99,6 +99,13 @@ export function CVContent({ cv, isDirectAccess = false }) {
       else {
         container.appendChild(el)
       }
+
+      // Override image loading & decoding attributes for print
+      const imgs = container.querySelectorAll('img') || []
+      imgs.forEach((img) => {
+        img.loading = "eager"
+        img.decoding = "sync"
+      })
     })
   }, [mounted])
 
