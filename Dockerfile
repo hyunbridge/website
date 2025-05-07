@@ -49,7 +49,6 @@ RUN apk add --no-cache \
     freetype \
     harfbuzz \
     ca-certificates \
-    ttf-freefont \
     dbus \
     fontconfig
 
@@ -67,6 +66,11 @@ RUN npm ci --only=production
 COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/next.config.mjs ./next.config.mjs
+
+# Install Pretendard into system font directory from public folder
+RUN mkdir -p /usr/share/fonts/pretendard && \
+    cp /app/public/fonts/*.otf /usr/share/fonts/pretendard/ && \
+    fc-cache -fv
 
 # Create necessary cache directories for Puppeteer
 RUN mkdir -p /app/.cache/puppeteer && chown -R node:node /app
