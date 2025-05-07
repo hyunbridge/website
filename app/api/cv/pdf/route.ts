@@ -57,6 +57,12 @@ export async function GET(request: Request) {
     
     try {
       await page.goto(targetUrl, { waitUntil: "networkidle0", timeout: 60000 })
+
+      // Wait for all fonts to be loaded (avoid missing glyphs)
+      await page.evaluate(async () => {
+        await document.fonts.ready
+      })
+
       const pdfBuffer = await page.pdf({ format: "A4", printBackground: true })
       
       return new NextResponse(pdfBuffer, {
