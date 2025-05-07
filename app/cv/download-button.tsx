@@ -16,6 +16,7 @@ import {
 export function DownloadButton({ className = "" }) {
   const [showVerification, setShowVerification] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [generatingPdf, setGeneratingPdf] = useState(false)
   const { toast } = useToast()
   
   const siteKey = process.env.NEXT_PUBLIC_CLOUDFLARE_TURNSTILE_SITE_KEY
@@ -39,22 +40,50 @@ export function DownloadButton({ className = "" }) {
     setLoading(true)
     
     try {
-      // Send token directly to the PDF API without client-side verification
+      // Close CAPTCHA dialog and show PDF generation process
+      setShowVerification(false)
+      setGeneratingPdf(true)
+      
+      // Send token to the PDF API
       const pdfUrl = `/api/cv/pdf?token=${encodeURIComponent(token)}`
       
-      // Close dialog before opening the PDF to avoid delays
-      setShowVerification(false)
+      // Fetch the PDF as blob instead of opening a new window
+      const response = await fetch(pdfUrl)
       
-      // Open the PDF in a new tab
-      window.open(pdfUrl, "_blank")
+      if (!response.ok) {
+        throw new Error(`Error: ${response.status}`)
+      }
+      
+      // Convert response to blob
+      const blob = await response.blob()
+      
+      // Create a download link
+      const downloadUrl = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = downloadUrl
+      link.download = "CV.pdf"
+      
+      // Trigger download
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      
+      // Clean up the URL object
+      window.URL.revokeObjectURL(downloadUrl)
+      
+      toast({
+        title: "Success",
+        description: "PDF downloaded successfully",
+      })
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to initiate the download. Please try again.",
+        description: "Failed to generate or download the PDF. Please try again.",
         variant: "destructive",
       })
     } finally {
       setLoading(false)
+      setGeneratingPdf(false)
     }
   }
 
@@ -88,6 +117,23 @@ export function DownloadButton({ className = "" }) {
                 }}
               />
             )}
+          </div>
+        </DialogContent>
+      </Dialog>
+      
+      {/* PDF Generation Dialog */}
+      <Dialog open={generatingPdf} onOpenChange={setGeneratingPdf}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>PDF Download</DialogTitle>
+            <DialogDescription>
+              Please wait while we generate your PDF.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="flex flex-col items-center justify-center py-8 space-y-4">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <p>Generating PDF...</p>
           </div>
         </DialogContent>
       </Dialog>

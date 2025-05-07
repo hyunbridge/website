@@ -69,7 +69,7 @@ export async function GET(request: Request) {
         status: 200,
         headers: {
           "Content-Type": "application/pdf",
-          "Content-Disposition": `inline; filename="CV.pdf"`,
+          "Content-Disposition": `attachment; filename="CV.pdf"`,
         },
       })
     } finally {
