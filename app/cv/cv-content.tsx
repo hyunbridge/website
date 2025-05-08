@@ -33,6 +33,24 @@ const Equation = dynamic(() => import("react-notion-x/build/third-party/equation
   ssr: false,
 })
 
+// Helper function to get last modified date
+export function getLastModifiedTimestamp(recordMap: any): string | null {
+  if (!recordMap || !recordMap.block) return null
+  const pageId = Object.keys(recordMap.block)[0]
+  return recordMap.block[pageId]?.value?.last_edited_time || null
+}
+
+// Format the timestamp to human-readable format
+export function formatLastModified(timestamp: number | null): string {
+  if (!timestamp) return "Unknown"
+  const date = new Date(timestamp)
+  return date.toLocaleDateString("en-GB", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  })
+}
+
 export function CVContent({ cv, isDirectAccess = false }) {
   const [mounted, setMounted] = useState(false)
   const [clientCv, setClientCv] = useState(cv)
@@ -125,17 +143,8 @@ export function CVContent({ cv, isDirectAccess = false }) {
   }
 
   if (mounted) {
-    const lastEdited = () => {
-      const pageId = Object.keys(currentCv.recordMap.block)[0]
-      const lastEditedTimestamp = currentCv.recordMap.block[pageId]?.value?.last_edited_time
-      if (!lastEditedTimestamp) return "Unknown"
-      const date = new Date(lastEditedTimestamp)
-      return date.toLocaleDateString("en-GB", {
-        day: "numeric",
-        month: "short",
-        year: "numeric",
-      })
-    }
+    const lastEditedTimestamp = getLastModifiedTimestamp(currentCv.recordMap)
+    const formattedDate = formatLastModified(lastEditedTimestamp)
 
     return (
       <div ref={containerRef} className="notion-container print:notion-container dark:text-white">
@@ -152,7 +161,7 @@ export function CVContent({ cv, isDirectAccess = false }) {
           }}
           mapPageUrl={(pageId) => `/cv?id=${pageId}`}
         />
-        <p className="text-sm italic text-muted-foreground">Last updated on {lastEdited()}.</p>
+        <p className="text-sm italic text-muted-foreground">Last updated on {formattedDate}.</p>
       </div>
     )
   }

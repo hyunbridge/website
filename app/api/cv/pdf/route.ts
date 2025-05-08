@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server"
 import { verifyTurnstileToken } from "@/app/actions/verify-cv-download"
+import { getCachedPDF, cachePDF } from "@/lib/pdf-cache"
+import { getCVData } from "@/lib/notion"
 
 // Generate PDF using Puppeteer
 export async function GET(request: Request) {
@@ -34,6 +36,27 @@ export async function GET(request: Request) {
       )
     }
 
+    // Fetch current CV data to get the last modified timestamp
+    const cv = await getCVData()
+    const pageId = Object.keys(cv.recordMap.block)[0]
+    const lastModifiedTimestamp = cv.recordMap.block[pageId]?.value?.last_edited_time
+    const lastModified = lastModifiedTimestamp ? lastModifiedTimestamp.toString() : null
+
+    // Check if we have a valid cached PDF that matches the current last modified timestamp
+    if (lastModified) {
+      const cachedPDF = getCachedPDF(lastModified)
+      if (cachedPDF) {
+        return new NextResponse(cachedPDF, {
+          status: 200,
+          headers: {
+            "Content-Type": "application/pdf",
+            "Content-Disposition": `attachment; filename="CV.pdf"`,
+            "X-PDF-Cache": "HIT"
+          },
+        })
+      }
+    }
+
     // Set base URL based on environment
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"
     const targetUrl = `${baseUrl}/cv?print=true`
@@ -65,11 +88,17 @@ export async function GET(request: Request) {
 
       const pdfBuffer = await page.pdf({ format: "A4", printBackground: true })
       
+      // Cache the newly generated PDF if we have a valid last modified timestamp
+      if (lastModified) {
+        cachePDF(pdfBuffer, lastModified)
+      }
+      
       return new NextResponse(pdfBuffer, {
         status: 200,
         headers: {
           "Content-Type": "application/pdf",
           "Content-Disposition": `attachment; filename="CV.pdf"`,
+          "X-PDF-Cache": "MISS"
         },
       })
     } finally {
