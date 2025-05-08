@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { ErrorBoundary } from "@/components/error-boundary"
 import { ErrorMessage } from "@/components/error-message"
 
-export const revalidate = 0
+export const revalidate = 60 // 1 minute
 
 export const metadata = {
   title: "CV | Hyungyo Seo",
