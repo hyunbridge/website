@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase"
+import { deleteFromS3 } from "./s3-service"
 
 export type Post = {
   id: string
@@ -393,30 +394,49 @@ export async function updatePost(
 }
 
 // Delete a post
-export async function deletePost(id: string): Promise<string[]> {
+export async function deletePost(id: string): Promise<void> {
   try {
-    // Get the post images before deleting the post
+    // 1. Get the list of images associated with the post
     const { data: images, error: imageError } = await supabase.from("post_images").select("url").eq("post_id", id)
 
     if (imageError) {
       console.error("Error fetching post images:", imageError)
-      throw imageError
+      throw imageError // Abort if we can't get the image list
     }
 
-    // Extract image URLs
-    const imageUrls = images.map((image) => image.url)
+    // 2. If there are images, attempt to delete them from S3 FIRST.
+    if (images && images.length > 0) {
+      const imageKeys = images
+        .map((image) => {
+          try {
+            const url = new URL(image.url)
+            return url.pathname.substring(1)
+          } catch (e) {
+            console.error(`Invalid image URL, cannot extract key: ${image.url}`)
+            return null
+          }
+        })
+        .filter((key): key is string => key !== null)
 
-    // Delete the post
-    const { error } = await supabase.from("posts").delete().eq("id", id)
-
-    if (error) {
-      console.error("Error deleting post:", error)
-      throw error
+      if (imageKeys.length > 0) {
+        // If this fails, it will throw and the function will exit, leaving the DB intact.
+        await deleteFromS3(imageKeys)
+      }
     }
 
-    return imageUrls
+    // 3. If S3 deletion was successful (or no images to delete), delete the post from the database.
+    const { error: deletePostError } = await supabase.from("posts").delete().eq("id", id)
+
+    if (deletePostError) {
+      // This is the failure case where S3 files are deleted but DB record is not.
+      console.error(
+        `CRITICAL: S3 images were deleted but DB post deletion failed. Post ID: ${id}. Please check for orphaned image links.`,
+        deletePostError,
+      )
+      throw deletePostError
+    }
   } catch (error) {
-    console.error("Error in deletePost:", error)
+    console.error("Error in deletePost transaction:", error)
     throw error
   }
 }
