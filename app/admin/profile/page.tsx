@@ -12,7 +12,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Loader2, Upload, Check, X } from "lucide-react"
+import { Loader2, Upload, Check, X, AlertCircle, RefreshCw } from "lucide-react"
 import { getPresignedUrl, uploadToS3 } from "@/lib/s3-service"
 
 export default function ProfilePage() {
@@ -34,31 +34,39 @@ export default function ProfilePage() {
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false)
   const [successMessage, setSuccessMessage] = useState("")
   const [errorMessage, setErrorMessage] = useState("")
+  const [profileLoadError, setProfileLoadError] = useState("")
+
+  const clearMessages = () => {
+    setSuccessMessage("")
+    setErrorMessage("")
+  }
+
+  const fetchProfile = async () => {
+    if (!user) return
+
+    setProfileLoadError("")
+    try {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("username, full_name, avatar_url")
+        .eq("id", user.id)
+        .single()
+
+      if (error) {
+        throw new Error(`Failed to load profile: ${error.message}`)
+      }
+
+      setProfile(data)
+      setFullName(data.full_name || "")
+    } catch (error) {
+      console.error("Error fetching profile:", error)
+      setProfileLoadError(error instanceof Error ? error.message : "Failed to load profile data")
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   useEffect(() => {
-    async function fetchProfile() {
-      if (!user) return
-
-      try {
-        const { data, error } = await supabase
-          .from("profiles")
-          .select("username, full_name, avatar_url")
-          .eq("id", user.id)
-          .single()
-
-        if (error) {
-          throw error
-        }
-
-        setProfile(data)
-        setFullName(data.full_name || "")
-      } catch (error) {
-        console.error("Error fetching profile:", error)
-      } finally {
-        setIsLoading(false)
-      }
-    }
-
     if (user) {
       fetchProfile()
     }
@@ -102,15 +110,18 @@ export default function ProfilePage() {
     if (!user) return
 
     setIsUpdatingProfile(true)
-    setSuccessMessage("")
-    setErrorMessage("")
+    clearMessages()
 
     try {
       let avatarUrl = profile?.avatar_url
 
       // Upload avatar if changed
       if (avatarFile) {
-        avatarUrl = await uploadAvatar()
+        try {
+          avatarUrl = await uploadAvatar()
+        } catch (avatarError) {
+          throw new Error(`Failed to upload avatar: ${avatarError instanceof Error ? avatarError.message : 'Unknown error'}`)
+        }
       }
 
       // Update profile
@@ -125,7 +136,7 @@ export default function ProfilePage() {
         .eq("id", user.id)
 
       if (error) {
-        throw error
+        throw new Error(`Failed to update profile: ${error.message}`)
       }
 
       setProfile({
@@ -135,10 +146,14 @@ export default function ProfilePage() {
         avatar_url: avatarUrl || null,
       })
 
+      // Clear avatar file and preview after successful update
+      setAvatarFile(null)
+      setAvatarPreview(null)
+
       setSuccessMessage("Profile updated successfully")
     } catch (error: any) {
       console.error("Error updating profile:", error)
-      setErrorMessage(error.message || "Failed to update profile")
+      setErrorMessage(error.message || "Failed to update profile. Please try again.")
     } finally {
       setIsUpdatingProfile(false)
     }
@@ -148,12 +163,16 @@ export default function ProfilePage() {
     if (!user) return
 
     setIsChangingPassword(true)
-    setSuccessMessage("")
-    setErrorMessage("")
+    clearMessages()
 
     try {
       if (newPassword !== confirmPassword) {
         setErrorMessage("Passwords do not match")
+        return
+      }
+
+      if (newPassword.length < 6) {
+        setErrorMessage("Password must be at least 6 characters long")
         return
       }
 
@@ -162,7 +181,7 @@ export default function ProfilePage() {
       })
 
       if (error) {
-        throw error
+        throw new Error(`Failed to change password: ${error.message}`)
       }
 
       setCurrentPassword("")
@@ -171,7 +190,7 @@ export default function ProfilePage() {
       setSuccessMessage("Password changed successfully")
     } catch (error: any) {
       console.error("Error changing password:", error)
-      setErrorMessage(error.message || "Failed to change password")
+      setErrorMessage(error.message || "Failed to change password. Please try again.")
     } finally {
       setIsChangingPassword(false)
     }
@@ -200,6 +219,29 @@ export default function ProfilePage() {
         </TabsList>
 
         <TabsContent value="general" className="space-y-6">
+          {profileLoadError && (
+            <Alert variant="destructive" className="mb-6">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                {profileLoadError}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="ml-2"
+                  onClick={() => fetchProfile()}
+                  disabled={isLoading}
+                >
+                  {isLoading ? (
+                    <RefreshCw className="h-3 w-3 mr-1 animate-spin" />
+                  ) : (
+                    <RefreshCw className="h-3 w-3 mr-1" />
+                  )}
+                  Retry
+                </Button>
+              </AlertDescription>
+            </Alert>
+          )}
+          
           {(successMessage || errorMessage) && (
             <Alert variant={successMessage ? "default" : "destructive"}>
               <AlertDescription>{successMessage || errorMessage}</AlertDescription>

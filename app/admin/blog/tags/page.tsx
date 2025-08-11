@@ -4,21 +4,27 @@ import { useState, useEffect } from "react"
 import { TagList } from "@/components/blog/tag-list"
 import { getAllTags } from "@/lib/blog-service"
 import { Skeleton } from "@/components/ui/skeleton"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Button } from "@/components/ui/button"
+import { AlertCircle, RefreshCw } from "lucide-react"
 
 export default function BlogTagsPage() {
   const [tags, setTags] = useState([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [errorMessage, setErrorMessage] = useState("")
 
   const fetchTags = async () => {
     try {
       setIsLoading(true)
+      setError(null)
+      setErrorMessage("")
       const tagsData = await getAllTags()
       setTags(tagsData)
-      setError(null)
     } catch (err) {
       console.error("Error fetching tags:", err)
-      setError("Failed to load tags")
+      setError(err)
+      setErrorMessage(err instanceof Error ? err.message : "Failed to load tags. Please try again.")
     } finally {
       setIsLoading(false)
     }
@@ -45,24 +51,34 @@ export default function BlogTagsPage() {
     )
   }
 
-  if (error) {
-    return (
-      <div className="py-10 text-center">
-        <p className="text-destructive mb-4">{error}</p>
-        <button 
-          onClick={fetchTags}
-          className="px-4 py-2 bg-primary text-primary-foreground rounded-md"
-        >
-          Try again
-        </button>
-      </div>
-    )
-  }
-
   return (
     <div>
       <h1 className="text-3xl font-bold mb-6">Tags</h1>
-      <TagList tags={tags} isAdmin onTagsChange={handleTagsChange} />
+      
+      {error && (
+        <Alert variant="destructive" className="mb-6">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            {errorMessage}
+            <Button
+              variant="outline"
+              size="sm"
+              className="ml-2"
+              onClick={fetchTags}
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <RefreshCw className="h-3 w-3 mr-1 animate-spin" />
+              ) : (
+                <RefreshCw className="h-3 w-3 mr-1" />
+              )}
+              Retry
+            </Button>
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {!error && <TagList tags={tags} isAdmin onTagsChange={handleTagsChange} />}
     </div>
   )
 }

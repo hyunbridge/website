@@ -1,50 +1,99 @@
 import type React from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { FileText } from "lucide-react"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Button } from "@/components/ui/button"
+import { FileText, AlertCircle, RefreshCw } from "lucide-react"
 import Link from "next/link"
 import { supabase } from "@/lib/supabase"
 
 async function getBlogPostCount() {
-  const { count, error } = await supabase.from("posts").select("*", { count: "exact", head: true })
+  try {
+    const { count, error } = await supabase.from("posts").select("*", { count: "exact", head: true })
 
-  if (error) {
+    if (error) {
+      throw new Error(`Failed to fetch blog post count: ${error.message}`)
+    }
+
+    return count || 0
+  } catch (error) {
     console.error("Error fetching blog post count:", error)
-    return 0
+    throw error
   }
-
-  return count || 0
 }
 
 async function getRecentPosts(limit = 5) {
-  const { data, error } = await supabase
-    .from("posts")
-    .select("id, title, slug, created_at")
-    .order("created_at", { ascending: false })
-    .limit(limit)
+  try {
+    const { data, error } = await supabase
+      .from("posts")
+      .select("id, title, slug, created_at")
+      .order("created_at", { ascending: false })
+      .limit(limit)
 
-  if (error) {
+    if (error) {
+      throw new Error(`Failed to fetch recent posts: ${error.message}`)
+    }
+
+    return data || []
+  } catch (error) {
     console.error("Error fetching recent posts:", error)
-    return []
+    throw error
   }
-
-  return data || []
 }
 
 export default async function AdminDashboard() {
-  const postCount = await getBlogPostCount()
-  const recentPosts = await getRecentPosts(5)
+  let postCount = 0
+  let recentPosts = []
+  let hasPostCountError = false
+  let hasRecentPostsError = false
+  let postCountError = ""
+  let recentPostsError = ""
+
+  try {
+    postCount = await getBlogPostCount()
+  } catch (error) {
+    hasPostCountError = true
+    postCountError = error instanceof Error ? error.message : "Unknown error occurred"
+  }
+
+  try {
+    recentPosts = await getRecentPosts(5)
+  } catch (error) {
+    hasRecentPostsError = true
+    recentPostsError = error instanceof Error ? error.message : "Unknown error occurred"
+  }
 
   return (
     <div>
       <h1 className="text-3xl font-bold mb-8">Dashboard</h1>
 
+      {(hasPostCountError || hasRecentPostsError) && (
+        <Alert variant="destructive" className="mb-6">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            Some data could not be loaded. 
+            {hasPostCountError && " Unable to fetch blog post count."}
+            {hasRecentPostsError && " Unable to fetch recent posts."}
+            <Button
+              variant="outline"
+              size="sm"
+              className="ml-2"
+              onClick={() => window.location.reload()}
+            >
+              <RefreshCw className="h-3 w-3 mr-1" />
+              Refresh
+            </Button>
+          </AlertDescription>
+        </Alert>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
         <DashboardCard
           title="Blog Posts"
-          value={postCount.toString()}
-          description="Total blog posts"
+          value={hasPostCountError ? "Error" : postCount.toString()}
+          description={hasPostCountError ? postCountError : "Total blog posts"}
           icon={<FileText className="h-5 w-5" />}
           href="/admin/blog/posts"
+          hasError={hasPostCountError}
         />
       </div>
 
@@ -55,7 +104,23 @@ export default async function AdminDashboard() {
             <CardDescription>Latest blog posts published on your site</CardDescription>
           </CardHeader>
           <CardContent>
-            {recentPosts.length > 0 ? (
+            {hasRecentPostsError ? (
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  {recentPostsError}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="ml-2"
+                    onClick={() => window.location.reload()}
+                  >
+                    <RefreshCw className="h-3 w-3 mr-1" />
+                    Retry
+                  </Button>
+                </AlertDescription>
+              </Alert>
+            ) : recentPosts.length > 0 ? (
               <div className="space-y-4">
                 {recentPosts.map((post) => (
                   <div key={post.id} className="flex justify-between items-center border-b pb-2">
@@ -77,11 +142,13 @@ export default async function AdminDashboard() {
             ) : (
               <p className="text-muted-foreground text-center py-8">No recent blog posts</p>
             )}
-            <div className="flex justify-end mt-4">
-              <Link href="/admin/blog/posts" className="text-sm text-primary hover:underline">
-                View all posts
-              </Link>
-            </div>
+            {!hasRecentPostsError && (
+              <div className="flex justify-end mt-4">
+                <Link href="/admin/blog/posts" className="text-sm text-primary hover:underline">
+                  View all posts
+                </Link>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -95,27 +162,31 @@ function DashboardCard({
   description,
   icon,
   href,
+  hasError,
 }: {
   title: string
   value: string
   description: string
   icon: React.ReactNode
   href?: string
+  hasError?: boolean
 }) {
   const content = (
-    <Card>
+    <Card className={hasError ? "border-destructive/50" : ""}>
       <CardHeader className="flex flex-row items-center justify-between pb-2">
         <CardTitle className="text-sm font-medium">{title}</CardTitle>
-        <div className="bg-primary/10 p-2 rounded-full text-primary">{icon}</div>
+        <div className={`p-2 rounded-full ${hasError ? "bg-destructive/10 text-destructive" : "bg-primary/10 text-primary"}`}>
+          {hasError ? <AlertCircle className="h-5 w-5" /> : icon}
+        </div>
       </CardHeader>
       <CardContent>
-        <div className="text-2xl font-bold">{value}</div>
-        <p className="text-xs text-muted-foreground">{description}</p>
+        <div className={`text-2xl font-bold ${hasError ? "text-destructive" : ""}`}>{value}</div>
+        <p className={`text-xs ${hasError ? "text-destructive/80" : "text-muted-foreground"}`}>{description}</p>
       </CardContent>
     </Card>
   )
 
-  if (href) {
+  if (href && !hasError) {
     return <Link href={href}>{content}</Link>
   }
 

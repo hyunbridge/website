@@ -7,7 +7,8 @@ import { PostEditor } from "@/components/blog/post-editor"
 import { VersionHistory } from "@/components/blog/version-history"
 import { getPostById } from "@/lib/blog-service"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { AlertCircle } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { AlertCircle, RefreshCw } from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 export default function EditPostPage({ params }: { params: { id: string } }) {
@@ -17,52 +18,81 @@ export default function EditPostPage({ params }: { params: { id: string } }) {
   const [post, setPost] = useState(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState("")
+  const [errorDetails, setErrorDetails] = useState("")
   const [activeTab, setActiveTab] = useState("edit")
 
-  useEffect(() => {
-    async function fetchPost() {
-      if (!params.id) return
-
-      setIsLoading(true)
-      try {
-        const postData = await getPostById(params.id)
-        console.log("Fetched post data:", postData)
-        setPost(postData)
-      } catch (err) {
-        console.error("Error fetching post:", err)
-        setError("Failed to load post")
-      } finally {
-        setIsLoading(false)
-      }
-    }
-
-    fetchPost()
-  }, [params.id])
-
-  const handleVersionRestored = async () => {
-    // Reload the post after a version is restored
+  const fetchPost = async () => {
     if (!params.id) return
 
     setIsLoading(true)
+    setError("")
+    setErrorDetails("")
+    
     try {
       const postData = await getPostById(params.id)
       setPost(postData)
-      setActiveTab("edit") // Switch back to edit tab
     } catch (err) {
-      console.error("Error fetching post after version restore:", err)
-      setError("Failed to load updated post")
+      console.error("Error fetching post:", err)
+      setError("Failed to load post")
+      setErrorDetails(err instanceof Error ? err.message : "An unknown error occurred while loading the post. Please try again.")
     } finally {
       setIsLoading(false)
     }
   }
 
+  useEffect(() => {
+    fetchPost()
+  }, [params.id])
+
+  const handleVersionRestored = async () => {
+    setActiveTab("edit")
+    await fetchPost()
+  }
+
+  const handleRetry = () => {
+    fetchPost()
+  }
+
   if (error) {
     return (
       <div>
+        <div className="flex flex-col mb-8">
+          <h1 className="text-3xl font-bold">{isNewPost ? "Create Post" : "Edit Post"}</h1>
+          <Link href="/admin/blog/posts" className="text-sm text-muted-foreground hover:underline mt-2">
+            ← Back to post list
+          </Link>
+        </div>
+        
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Error</AlertTitle>
-          <AlertDescription>{error}</AlertDescription>
+          <AlertTitle>Failed to Load Post</AlertTitle>
+          <AlertDescription className="mt-2">
+            <div className="space-y-2">
+              <p>{errorDetails}</p>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleRetry}
+                  disabled={isLoading}
+                >
+                  {isLoading ? (
+                    <RefreshCw className="h-3 w-3 mr-1 animate-spin" />
+                  ) : (
+                    <RefreshCw className="h-3 w-3 mr-1" />
+                  )}
+                  Try Again
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => router.push("/admin/blog/posts")}
+                >
+                  Back to Posts
+                </Button>
+              </div>
+            </div>
+          </AlertDescription>
         </Alert>
       </div>
     )

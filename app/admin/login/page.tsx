@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Loader2 } from "lucide-react"
+import { Loader2, AlertCircle } from "lucide-react"
 
 export default function AdminLoginPage() {
   const { user, signIn, isLoading: authLoading } = useAuth()
@@ -28,6 +28,18 @@ export default function AdminLoginPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    
+    // Basic validation
+    if (!email.trim() || !password.trim()) {
+      setError("Please enter both email and password")
+      return
+    }
+
+    if (!email.includes("@")) {
+      setError("Please enter a valid email address")
+      return
+    }
+
     setIsSubmitting(true)
     setError("")
 
@@ -36,7 +48,21 @@ export default function AdminLoginPage() {
       router.push("/admin")
     } catch (err: any) {
       console.error("Login error:", err)
-      setError(err?.message || "Invalid email or password")
+      
+      // Provide more specific error messages
+      let errorMessage = "Login failed. Please try again."
+      
+      if (err?.message?.includes("Invalid login credentials")) {
+        errorMessage = "Invalid email or password. Please check your credentials and try again."
+      } else if (err?.message?.includes("Email not confirmed")) {
+        errorMessage = "Please check your email and confirm your account before logging in."
+      } else if (err?.message?.includes("Too many requests")) {
+        errorMessage = "Too many login attempts. Please wait a moment before trying again."
+      } else if (err?.message) {
+        errorMessage = err.message
+      }
+      
+      setError(errorMessage)
     } finally {
       setIsSubmitting(false)
     }
@@ -65,6 +91,7 @@ export default function AdminLoginPage() {
           <CardContent className="space-y-4">
             {error && (
               <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
                 <AlertDescription>{error}</AlertDescription>
               </Alert>
             )}
@@ -76,6 +103,7 @@ export default function AdminLoginPage() {
                 placeholder="your@email.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                disabled={isSubmitting}
                 required
               />
             </div>
@@ -86,6 +114,7 @@ export default function AdminLoginPage() {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                disabled={isSubmitting}
                 required
               />
             </div>
