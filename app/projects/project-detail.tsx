@@ -10,6 +10,7 @@ import { useEffect, useState, useRef } from "react"
 import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion"
 import Link from "next/link"
 import { Card, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { NotionImage } from "@/components/notion-image"
 
 // Import required components for NotionRenderer
 import dynamic from "next/dynamic"
@@ -43,8 +44,8 @@ export function ProjectDetail({ project, isModal = false }) {
   const router = useRouter()
   const [isMounted, setIsMounted] = useState(false)
   const [hasScrolled, setHasScrolled] = useState(false)
-  const contentRef = useRef(null)
-  const containerRef = useRef(null)
+  const contentRef = useRef<HTMLDivElement>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
 
   // Scroll animation values
   const { scrollYProgress } = useScroll({
@@ -112,13 +113,12 @@ export function ProjectDetail({ project, isModal = false }) {
             scale: imageScale,
           }}
         >
-          <motion.img
+          <NotionImage
             src={project.imageUrl || "/placeholder.svg?height=600&width=1200"}
             alt={project.title}
-            className="w-full h-full object-cover"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.5 }}
+            fill
+            className="w-full h-full"
+            priority
             style={{
               filter: `blur(${imageBlur.get()}px)`,
             }}
@@ -137,24 +137,24 @@ export function ProjectDetail({ project, isModal = false }) {
         {/* Scroll indicator arrow - Positioned above the content card */}
         <AnimatePresence>
           {!hasScrolled && (
-              <motion.div
-                  className="absolute left-0 right-0 mx-auto top-[calc(70vh-48px)] w-fit z-20"
-                  initial={{ opacity: 1, y: 0 }}
-                  animate={{
-                    opacity: scrollArrowOpacity,
-                    y: [0, 10, 0],
-                  }}
-                  exit={{ opacity: 0, y: 20 }}
-                  transition={{
-                    opacity: { duration: 0.3 },
-                    y: { repeat: Number.POSITIVE_INFINITY, duration: 1.5, ease: "easeInOut" },
-                  }}
-                  onClick={handleScrollDown}
-              >
-                <div className="bg-background/80 backdrop-blur-sm p-3 rounded-full shadow-lg border border-border/50 cursor-pointer hover:bg-background/90 transition-colors">
-                  <ChevronDown className="h-6 w-6 text-foreground" />
-                </div>
-              </motion.div>
+            <motion.div
+              className="absolute left-0 right-0 mx-auto top-[calc(70vh-48px)] w-fit z-20"
+              initial={{ opacity: 1, y: 0 }}
+              animate={{
+                y: [0, 10, 0],
+              }}
+              style={{ opacity: scrollArrowOpacity }}
+              exit={{ opacity: 0, y: 20 }}
+              transition={{
+                opacity: { duration: 0.3 },
+                y: { repeat: Number.POSITIVE_INFINITY, duration: 1.5, ease: "easeInOut" },
+              }}
+              onClick={handleScrollDown}
+            >
+              <div className="bg-background/80 backdrop-blur-sm p-3 rounded-full shadow-lg border border-border/50 cursor-pointer hover:bg-background/90 transition-colors">
+                <ChevronDown className="h-6 w-6 text-foreground" />
+              </div>
+            </motion.div>
           )}
         </AnimatePresence>
 
@@ -198,7 +198,7 @@ export function ProjectDetail({ project, isModal = false }) {
                     fullPage={false}
                     darkMode={isDarkMode}
                     components={{
-                      nextImage: Image,
+                      nextImage: NotionImage,
                       nextLink: Link,
                       Code,
                       Collection,

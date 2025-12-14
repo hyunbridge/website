@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation"
 import { ErrorMessage } from "@/components/error-message"
 import { AlertTriangle } from "lucide-react"
 import { useState } from "react"
+import { NotionImage } from "@/components/notion-image"
 
 export function ProjectList({ projects, error }) {
   const router = useRouter()
@@ -57,12 +58,11 @@ export function ProjectList({ projects, error }) {
             onClick={() => handleProjectClick(project)}
           >
             <div className="relative h-48 w-full overflow-hidden">
-              <motion.img
+              <NotionImage
                 src={project.imageUrl || "/placeholder.svg?height=400&width=600"}
                 alt={project.title}
-                className="object-cover w-full h-full"
-                whileHover={{ scale: 1.05 }}
-                transition={{ duration: 0.3 }}
+                fill
+                className="w-full h-full"
               />
             </div>
             <CardHeader>
