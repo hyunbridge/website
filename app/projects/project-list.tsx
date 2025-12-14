@@ -1,34 +1,13 @@
 "use client"
+
 import { motion } from "framer-motion"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { useRouter } from "next/navigation"
-import { ErrorMessage } from "@/components/error-message"
 import { AlertTriangle } from "lucide-react"
-import { useState } from "react"
 import { NotionImage } from "@/components/notion-image"
+import Link from "next/link"
 
-export function ProjectList({ projects, error }) {
-  const router = useRouter()
-  const [isNavigating, setIsNavigating] = useState(false)
-
-  const handleProjectClick = (project) => {
-    if (isNavigating) return
-
-    setIsNavigating(true)
-
-    // Use slug if available, otherwise use ID
-    const projectPath = project.slug || project.id
-
-    // Prefetch the project detail page to make transition faster
-    router.prefetch(`/projects/${projectPath}`)
-    router.push(`/projects/${projectPath}`)
-  }
-
-  if (error) {
-    return <ErrorMessage title="Failed to load projects" message={error} />
-  }
-
+export function ProjectList({ projects }: { projects: any[] }) {
   if (!projects || projects.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-center">
@@ -53,35 +32,34 @@ export function ProjectList({ projects, error }) {
           whileHover={{ y: -5, transition: { duration: 0.2 } }}
           whileTap={{ scale: 0.98 }}
         >
-          <Card
-            className={`h-full cursor-pointer hover:shadow-md transition-shadow overflow-hidden flex flex-col border border-border ${isNavigating ? "pointer-events-none" : ""}`}
-            onClick={() => handleProjectClick(project)}
-          >
-            <div className="relative h-48 w-full overflow-hidden">
-              <NotionImage
-                src={project.imageUrl || "/placeholder.svg?height=400&width=600"}
-                alt={project.title}
-                fill
-                className="w-full h-full"
-              />
-            </div>
-            <CardHeader>
-              <CardTitle>{project.title}</CardTitle>
-            </CardHeader>
-            <CardContent className="flex-grow">
-              <p className="text-sm text-muted-foreground line-clamp-3">{project.summary}</p>
-            </CardContent>
-            <CardFooter>
-              <div className="flex flex-wrap gap-2">
-                {project.tags &&
-                  project.tags.map((tag) => (
-                    <Badge key={tag} variant="secondary">
-                      {tag}
-                    </Badge>
-                  ))}
+          <Link href={`/projects/${project.slug || project.id}`} className="block h-full">
+            <Card className="h-full hover:shadow-md transition-shadow overflow-hidden flex flex-col border border-border">
+              <div className="relative h-48 w-full overflow-hidden">
+                <NotionImage
+                  src={project.imageUrl || "/placeholder.svg?height=400&width=600"}
+                  alt={project.title}
+                  fill
+                  className="w-full h-full"
+                />
               </div>
-            </CardFooter>
-          </Card>
+              <CardHeader>
+                <CardTitle>{project.title}</CardTitle>
+              </CardHeader>
+              <CardContent className="flex-grow">
+                <p className="text-sm text-muted-foreground line-clamp-3">{project.summary}</p>
+              </CardContent>
+              <CardFooter>
+                <div className="flex flex-wrap gap-2">
+                  {project.tags &&
+                    project.tags.map((tag: string) => (
+                      <Badge key={tag} variant="secondary">
+                        {tag}
+                      </Badge>
+                    ))}
+                </div>
+              </CardFooter>
+            </Card>
+          </Link>
         </motion.div>
       ))}
     </div>

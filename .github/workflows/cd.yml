@@ -38,7 +38,10 @@ jobs:
             --build-arg NEXT_PUBLIC_GISCUS_REPO_ID=${{ secrets.NEXT_PUBLIC_GISCUS_REPO_ID }} \
             --build-arg NEXT_PUBLIC_GISCUS_CATEGORY=${{ secrets.NEXT_PUBLIC_GISCUS_CATEGORY }} \
             --build-arg NEXT_PUBLIC_GISCUS_CATEGORY_ID=${{ secrets.NEXT_PUBLIC_GISCUS_CATEGORY_ID }} \
-            --build-arg NEXT_PUBLIC_CDN_URL=${{ secrets.NEXT_PUBLIC_CDN_URL }}
+            --build-arg NEXT_PUBLIC_CDN_URL=${{ secrets.NEXT_PUBLIC_CDN_URL }} \
+            --build-arg NOTION_API_KEY=${{ secrets.NOTION_API_KEY }} \
+            --build-arg NOTION_PROJECTS_DATABASE_ID=${{ secrets.NOTION_PROJECTS_DATABASE_ID }} \
+            --build-arg NOTION_CV_PAGE_ID=${{ secrets.NOTION_CV_PAGE_ID }}
 
       - name: Deploy to VM
         uses: appleboy/ssh-action@v0.1.7
