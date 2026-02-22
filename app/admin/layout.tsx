@@ -6,7 +6,7 @@ import { useEffect, useState } from "react"
 import { useRouter, usePathname } from "next/navigation"
 import Link from "next/link"
 import { useAuth } from "@/contexts/auth-context"
-import { LayoutDashboard, FileText, Settings, LogOut, User, ChevronLeft, ChevronRight } from "lucide-react"
+import { LayoutDashboard, FileText, FolderKanban, Tags, LogOut, User, ChevronLeft, ChevronRight } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -66,7 +66,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             </div>
           </div>
         </div>
-        
+
         {/* Skeleton for main content */}
         <main className="flex-1 ml-64 overflow-auto pt-16">
           <div className="container py-8 space-y-6">
@@ -98,19 +98,19 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       icon: LayoutDashboard,
     },
     {
+      name: "Projects",
+      href: "/admin/projects",
+      icon: FolderKanban,
+    },
+    {
       name: "Blog",
-      href: "/admin/blog/posts",
+      href: "/admin/blog",
       icon: FileText,
-      subItems: [
-        {
-          name: "Posts",
-          href: "/admin/blog/posts",
-        },
-        {
-          name: "Tags",
-          href: "/admin/blog/tags",
-        },
-      ],
+    },
+    {
+      name: "Tags",
+      href: "/admin/tags",
+      icon: Tags,
     },
   ]
 
@@ -172,7 +172,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               )
             })}
           </nav>
-          
+
           <div className="px-4 pb-2">
             <button
               onClick={() => setCollapsed(!collapsed)}
@@ -186,7 +186,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               {!collapsed && <span>Collapse</span>}
             </button>
           </div>
-          
+
           <div className={cn("p-4 border-t mt-auto", collapsed ? "flex flex-col items-center" : "")}>
             <Link
               href="/admin/profile"

@@ -209,6 +209,7 @@ CREATE TABLE IF NOT EXISTS public.project_contents (
   is_ongoing boolean NOT NULL DEFAULT false,
   role text NULL,
   organization text NULL,
+  links jsonb NOT NULL DEFAULT '[]'::jsonb,
   CONSTRAINT project_contents_pkey PRIMARY KEY (content_item_id),
   CONSTRAINT project_contents_content_item_id_fkey FOREIGN KEY (content_item_id) REFERENCES public.content_items(id) ON DELETE CASCADE
 );
@@ -549,3 +550,56 @@ CREATE POLICY "Owners can manage page subtype."
   ON public.page_contents FOR ALL
   USING (EXISTS (SELECT 1 FROM public.content_items ci WHERE ci.id = page_contents.content_item_id AND ci.owner_id = auth.uid()))
   WITH CHECK (EXISTS (SELECT 1 FROM public.content_items ci WHERE ci.id = page_contents.content_item_id AND ci.owner_id = auth.uid()));
+
+DROP FUNCTION IF EXISTS public.reorder_project_contents(jsonb);
+CREATE FUNCTION public.reorder_project_contents(p_items jsonb)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY INVOKER
+SET search_path = public
+AS $$
+DECLARE
+  expected_count integer;
+  updated_count integer;
+BEGIN
+  IF p_items IS NULL OR jsonb_typeof(p_items) <> 'array' THEN
+    RAISE EXCEPTION 'p_items must be a JSON array';
+  END IF;
+
+  SELECT count(*) INTO expected_count
+  FROM jsonb_to_recordset(p_items) AS x(id uuid, sort_order integer);
+
+  IF expected_count = 0 THEN
+    RETURN;
+  END IF;
+
+  IF EXISTS (
+    SELECT 1
+    FROM (
+      SELECT x.id
+      FROM jsonb_to_recordset(p_items) AS x(id uuid, sort_order integer)
+      GROUP BY x.id
+      HAVING count(*) > 1
+    ) dupes
+  ) THEN
+    RAISE EXCEPTION 'Duplicate project ids in reorder payload';
+  END IF;
+
+  WITH payload AS (
+    SELECT x.id AS content_item_id, x.sort_order
+    FROM jsonb_to_recordset(p_items) AS x(id uuid, sort_order integer)
+  )
+  UPDATE public.project_contents pc
+  SET sort_order = payload.sort_order
+  FROM payload
+  WHERE pc.content_item_id = payload.content_item_id;
+
+  GET DIAGNOSTICS updated_count = ROW_COUNT;
+
+  IF updated_count <> expected_count THEN
+    RAISE EXCEPTION 'Reorder failed for some projects (updated %, expected %)', updated_count, expected_count;
+  END IF;
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.reorder_project_contents(jsonb) TO authenticated;

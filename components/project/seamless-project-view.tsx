@@ -4,15 +4,14 @@ import { useState, useEffect, useCallback, useRef, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/contexts/auth-context"
 import { BlockNoteEditor } from "./blocknote-editor"
-import { Comments } from "./comments"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
 import {
     Check,
     Loader2,
     AlertCircle,
-    Globe,
     GlobeLock,
     Tag as TagIcon,
     ImageIcon,
@@ -22,31 +21,43 @@ import {
     Send,
     ChevronDown,
     Trash2,
+    Settings,
+    Link as LinkIcon,
+    MessageSquare,
 } from "lucide-react"
 import {
-    addPostTag,
-    createPostVersionFromSnapshot,
-    createTag,
-    deletePost,
-    getAllTags,
-    getPostPublishedVersion,
-    getPostVersioningState,
-    publishPost,
-    recordPostImage,
-    removePostTag,
-    renamePost,
-    savePostDraftContent,
-    setPostCurrentVersion,
+    updateProject,
+    addProjectTag,
+    createProjectVersionFromSnapshot,
+    deleteProject,
+    getProjectPublishedVersion,
+    getProjectVersioningState,
+    publishProject,
+    recordProjectImage,
+    removeProjectTag,
+    renameProject,
+    saveProjectDraftContent,
+    setProjectCurrentVersion,
     type Tag,
-    type Post,
-    unpublishPost,
-    updatePostCoverImage,
-    updatePostVersionSnapshot,
-} from "@/lib/blog-service"
+    type Project,
+    unpublishProject,
+    updateProjectCoverImage,
+    updateProjectVersionSnapshot,
+} from "@/lib/project-service"
+import { createTag, getAllTags } from "@/lib/blog-service"
 import Link from "next/link"
 import { format } from "date-fns"
 import { VersionHistory } from "./version-history"
 import { textSimilarity, blocksToText, SIMILARITY_THRESHOLD } from "./blocknote-inner"
+import { Label } from "@/components/ui/label"
+import { Card, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+    Dialog,
+    DialogContent,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog"
 import {
     Popover,
     PopoverContent,
@@ -63,29 +74,40 @@ import { getPresignedUrl } from "@/lib/s3-service"
 type SaveStatus = "idle" | "saving" | "saved" | "error"
 
 type Props = {
-    post: Post
+    project: Project
     mode?: "view" | "edit"
 }
 
-export function SeamlessPostView({ post: initialPost, mode = "view" }: Props) {
+export function SeamlessProjectView({ project: initialProject, mode = "view" }: Props) {
     const router = useRouter()
     const { user } = useAuth()
-    const [post, setPost] = useState(initialPost)
+    const [project, setProject] = useState(initialProject)
     const [saveStatus, setSaveStatus] = useState<SaveStatus>(mode === "edit" ? "saved" : "idle")
-    const [title, setTitle] = useState(post.title)
-    const [isPublished, setIsPublished] = useState(post.is_published)
+    const [title, setTitle] = useState(project.title)
+    const [summary, setSummary] = useState(project.summary || "")
+    const [isPublished, setIsPublished] = useState(project.is_published)
     const [allTags, setAllTags] = useState<Tag[]>([])
-    const [postTags, setPostTags] = useState<Tag[]>(post.tags || [])
+    const [projectTags, setProjectTags] = useState<Tag[]>(project.tags || [])
+    const [projectLinks, setProjectLinks] = useState(project.links || [])
+    const [settingsSummaryDraft, setSettingsSummaryDraft] = useState(project.summary || "")
+
+    const [settingsLinksDraft, setSettingsLinksDraft] = useState(project.links || [])
     const [newTagName, setNewTagName] = useState("")
     const [showHistory, setShowHistory] = useState(false)
+    const [showSettingsModal, setShowSettingsModal] = useState(false)
     const [isSavingVersion, setIsSavingVersion] = useState(false)
+    const [isSavingSettings, setIsSavingSettings] = useState(false)
     const [isDeleting, setIsDeleting] = useState(false)
     const titleSaveTimer = useRef<NodeJS.Timeout | null>(null)
     const autoVersionSaveTimer = useRef<NodeJS.Timeout | null>(null)
-    const currentContentRef = useRef<string>(post.content || "")
-    const [draftContentForCompare, setDraftContentForCompare] = useState(post.content || "")
+    const currentContentRef = useRef<string>(project.content || "")
+    const [draftContentForCompare, setDraftContentForCompare] = useState(project.content || "")
 
-    const isAuthor = user?.id === post.author_id
+
+    const [newLinkLabel, setNewLinkLabel] = useState("")
+    const [newLinkUrl, setNewLinkUrl] = useState("")
+
+    const isAuthor = user?.id === project.owner_id
     // edit mode requires being the author; view mode never enables editing
     const isEditable = mode === "edit" && isAuthor
 
@@ -95,8 +117,8 @@ export function SeamlessPostView({ post: initialPost, mode = "view" }: Props) {
 
     // Fetch published version content for readers and draft-vs-published comparison in edit mode
     useEffect(() => {
-        const pvId = (post as any).published_version_id
-        if (!pvId || !post.is_published) {
+        const pvId = (project as any).published_version_id
+        if (!pvId || !project.is_published) {
             setPublishedVersionLoading(false)
             setPublishedVersion(null)
             return // No published version
@@ -105,7 +127,7 @@ export function SeamlessPostView({ post: initialPost, mode = "view" }: Props) {
         setPublishedVersionLoading(true)
             ; (async () => {
                 try {
-                    const data = await getPostPublishedVersion(pvId)
+                    const data = await getProjectPublishedVersion(pvId)
                     if (data) setPublishedVersion({ title: data.title, content: data.content || "[]", summary: data.summary })
                 } catch {
                     // Published version fetch failed — will show "not published"
@@ -113,10 +135,10 @@ export function SeamlessPostView({ post: initialPost, mode = "view" }: Props) {
                     setPublishedVersionLoading(false)
                 }
             })()
-    }, [isEditable, post])
+    }, [isEditable, project])
 
     // Author sees draft; reader sees published version ONLY (no draft fallback)
-    const displayContent = isEditable ? post.content : publishedVersion?.content
+    const displayContent = isEditable ? project.content : publishedVersion?.content
     const displayTitle = isEditable ? title : (publishedVersion?.title || title)
 
     useEffect(() => {
@@ -134,25 +156,25 @@ export function SeamlessPostView({ post: initialPost, mode = "view" }: Props) {
                 .replace(/\s+/g, "-")
                 .replace(/-+/g, "-")
                 .trim()
-            return slug || post.slug || `untitled-${post.id.slice(0, 8)}`
+            return slug || project.slug || `project-${project.id.slice(0, 8)}`
         },
-        [post.id, post.slug],
+        [project.id, project.slug],
     )
 
     const flushTitleNow = useCallback(
         async (nextTitle: string) => {
-            if (!isEditable || !post.id) return
+            if (!isEditable || !project.id) return
             const slug = buildSafeSlug(nextTitle)
-            await renamePost(post.id, nextTitle, slug)
-            setPost((prev) => ({ ...prev, title: nextTitle, slug }))
+            await renameProject(project.id, nextTitle, slug)
+            setProject((prev) => ({ ...prev, title: nextTitle, slug }))
         },
-        [isEditable, post.id, buildSafeSlug],
+        [isEditable, project.id, buildSafeSlug],
     )
 
     const flushDraftContentNow = useCallback(async () => {
-        if (!isEditable || !post.id) return
-        await savePostDraftContent(post.id, currentContentRef.current || "[]")
-    }, [isEditable, post.id])
+        if (!isEditable || !project.id) return
+        await saveProjectDraftContent(project.id, currentContentRef.current || "[]")
+    }, [isEditable, project.id])
 
     const initialBlocks = (() => {
         if (!displayContent) return undefined
@@ -177,10 +199,10 @@ export function SeamlessPostView({ post: initialPost, mode = "view" }: Props) {
         description?: string,
         options?: { forceNewVersion?: boolean },
     ): Promise<string | null> => {
-        if (!isEditable || !post.id) return null
+        if (!isEditable || !project.id) return null
         try {
             if (!user?.id) throw new Error("No user")
-            const { item: currentPost, currentVersion, latestVersion } = await getPostVersioningState(post.id)
+            const { item: currentProject, currentVersion, latestVersion } = await getProjectVersioningState(project.id)
             const currentText = blocksToText(currentVersion.body_text || "[]")
 
             if (latestVersion) {
@@ -188,14 +210,14 @@ export function SeamlessPostView({ post: initialPost, mode = "view" }: Props) {
                 const similarity = textSimilarity(prevText, currentText)
 
                 if (!options?.forceNewVersion && similarity >= SIMILARITY_THRESHOLD) {
-                    const isPublishedSnapshot = !!currentPost.published_version_id && latestVersion.id === currentPost.published_version_id
+                    const isPublishedSnapshot = !!currentProject.published_version_id && latestVersion.id === currentProject.published_version_id
 
                     if (!isPublishedSnapshot) {
                         // Small change → update existing latest version (only if it's not the published snapshot)
-                        await updatePostVersionSnapshot(latestVersion.id, {
-                            title: currentVersion.title || currentPost.title || "Untitled",
+                        await updateProjectVersionSnapshot(latestVersion.id, {
+                            title: currentVersion.title || currentProject.title || "Untitled",
                             content: currentVersion.body_text || "[]",
-                            summary: currentVersion.summary || currentPost.summary || "",
+                            summary: currentVersion.summary || currentProject.summary || "",
                             change_description: description || latestVersion.change_description,
                         })
                         return latestVersion.id
@@ -205,22 +227,22 @@ export function SeamlessPostView({ post: initialPost, mode = "view" }: Props) {
 
             // Big change or no previous version → create new version
             const nextNum = latestVersion ? latestVersion.version_number + 1 : 1
-            const newVersionId = await createPostVersionFromSnapshot({
-                postId: post.id,
+            const newVersionId = await createProjectVersionFromSnapshot({
+                projectId: project.id,
                 versionNumber: nextNum,
                 bodyFormat: currentVersion.body_format || "json",
-                title: currentVersion.title || currentPost.title || "Untitled",
+                title: currentVersion.title || currentProject.title || "Untitled",
                 content: currentVersion.body_text || "[]",
-                summary: currentVersion.summary || currentPost.summary || "",
+                summary: currentVersion.summary || currentProject.summary || "",
                 createdBy: user.id,
                 changeDescription: description || `Version ${nextNum}`,
                 snapshotStatus: "draft",
             })
-            await setPostCurrentVersion(
-                post.id,
+            await setProjectCurrentVersion(
+                project.id,
                 newVersionId,
-                currentVersion.title || currentPost.title || "Untitled",
-                currentVersion.summary || currentPost.summary || "",
+                currentVersion.title || currentProject.title || "Untitled",
+                currentVersion.summary || currentProject.summary || "",
             )
             return newVersionId
         } catch (err) {
@@ -235,6 +257,7 @@ export function SeamlessPostView({ post: initialPost, mode = "view" }: Props) {
         if (autoVersionSaveTimer.current) clearTimeout(autoVersionSaveTimer.current)
         setIsSavingVersion(true)
         setSaveStatus("saving")
+
         try {
             if (titleSaveTimer.current) {
                 clearTimeout(titleSaveTimer.current)
@@ -248,6 +271,7 @@ export function SeamlessPostView({ post: initialPost, mode = "view" }: Props) {
             setIsSavingVersion(false)
             return
         }
+
         const versionId = await smartSaveVersion("Manual save", { forceNewVersion: true })
         setSaveStatus(versionId ? "saved" : "error")
         setIsSavingVersion(false)
@@ -272,14 +296,14 @@ export function SeamlessPostView({ post: initialPost, mode = "view" }: Props) {
             if (!versionId) throw new Error("Failed to save version")
 
             // 2. Point published_version_id to this version
-            const { published_at: now } = await publishPost(post.id, versionId)
+            const { published_at: now } = await publishProject(project.id, versionId)
 
             setIsPublished(true)
-            setPost((prev) => ({ ...prev, is_published: true, published_at: now, published_version_id: versionId } as any))
+            setProject((prev) => ({ ...prev, is_published: true, published_at: now, published_version_id: versionId } as any))
             setPublishedVersion((prev) => ({
                 title,
                 content: currentContentRef.current || prev?.content || "[]",
-                summary: prev?.summary ?? null,
+                summary,
             }))
             setSaveStatus("saved")
         } catch (err) {
@@ -300,14 +324,14 @@ export function SeamlessPostView({ post: initialPost, mode = "view" }: Props) {
         return titleChanged || textSimilarity(pubText, draftText) < SIMILARITY_THRESHOLD
     }, [isPublished, publishedVersion, draftContentForCompare, title])
 
-    // Delete post
+    // Delete project
     const handleDelete = async () => {
         if (isDeleting) return
-        if (!confirm("Are you sure you want to delete this post? This cannot be undone.")) return
+        if (!confirm("Are you sure you want to delete this project? This cannot be undone.")) return
         setIsDeleting(true)
         try {
-            await deletePost(post.id)
-            router.push("/admin/blog/posts")
+            await deleteProject(project.id)
+            router.push("/admin/projects")
         } catch (err) {
             console.error("Delete failed:", err)
             setIsDeleting(false)
@@ -319,9 +343,9 @@ export function SeamlessPostView({ post: initialPost, mode = "view" }: Props) {
         if (autoVersionSaveTimer.current) clearTimeout(autoVersionSaveTimer.current)
         setSaveStatus("saving")
         try {
-            await unpublishPost(post.id)
+            await unpublishProject(project.id)
             setIsPublished(false)
-            setPost((prev) => ({ ...prev, is_published: false, published_at: null, published_version_id: null } as any))
+            setProject((prev) => ({ ...prev, is_published: false, published_at: null, published_version_id: null } as any))
             setSaveStatus("saved")
         } catch {
             setSaveStatus("error")
@@ -332,12 +356,13 @@ export function SeamlessPostView({ post: initialPost, mode = "view" }: Props) {
     const handleTitleChange = useCallback(
         (newTitle: string) => {
             setTitle(newTitle)
-            if (!isEditable || !post.id) return
+            if (!isEditable || !project.id) return
 
             if (titleSaveTimer.current) clearTimeout(titleSaveTimer.current)
             titleSaveTimer.current = setTimeout(async () => {
                 setSaveStatus("saving")
                 try {
+                    // Generate slug from title
                     await flushTitleNow(newTitle)
                     setSaveStatus("saved")
                 } catch {
@@ -345,29 +370,29 @@ export function SeamlessPostView({ post: initialPost, mode = "view" }: Props) {
                 }
             }, 1000)
         },
-        [isEditable, post.id, flushTitleNow],
+        [isEditable, project.id, flushTitleNow],
     )
 
     // Tag management
     const handleAddTag = async (tag: Tag) => {
-        if (postTags.find((t) => t.id === tag.id)) return
-        setPostTags((prev) => [...prev, tag])
+        if (projectTags.find((t) => t.id === tag.id)) return
+        setProjectTags((prev) => [...prev, tag])
         try {
-            await addPostTag(post.id, tag.id)
+            await addProjectTag(project.id, tag.id)
         } catch (err) {
             console.error("Failed to add tag:", err)
-            setPostTags((prev) => prev.filter((t) => t.id !== tag.id))
+            setProjectTags((prev) => prev.filter((t) => t.id !== tag.id))
         }
     }
 
     const handleRemoveTag = async (tagId: string) => {
-        const removed = postTags.find((t) => t.id === tagId)
-        setPostTags((prev) => prev.filter((t) => t.id !== tagId))
+        const removed = projectTags.find((t) => t.id === tagId)
+        setProjectTags((prev) => prev.filter((t) => t.id !== tagId))
         try {
-            await removePostTag(post.id, tagId)
+            await removeProjectTag(project.id, tagId)
         } catch (err) {
             console.error("Failed to remove tag:", err)
-            if (removed) setPostTags((prev) => [...prev, removed])
+            if (removed) setProjectTags((prev) => [...prev, removed])
         }
     }
 
@@ -394,14 +419,14 @@ export function SeamlessPostView({ post: initialPost, mode = "view" }: Props) {
 
             setSaveStatus("saving")
             try {
-                const fileName = `assets/${post.id}/cover.${file.name.split(".").pop()}`
+                const fileName = `assets/${project.id}/cover.${file.name.split(".").pop()}`
                 const contentType = file.type
                 const { url, fileUrl } = await getPresignedUrl(fileName, contentType)
                 await fetch(url, { method: "PUT", headers: { "Content-Type": contentType }, body: file })
-                await recordPostImage(post.id, fileUrl, "cover")
-                await updatePostCoverImage(post.id, fileUrl)
+                await recordProjectImage(project.id, fileUrl, "cover")
+                await updateProjectCoverImage(project.id, fileUrl)
 
-                setPost((prev) => ({ ...prev, cover_image: fileUrl }))
+                setProject((prev) => ({ ...prev, cover_image: fileUrl }))
                 setSaveStatus("saved")
             } catch {
                 setSaveStatus("error")
@@ -410,15 +435,84 @@ export function SeamlessPostView({ post: initialPost, mode = "view" }: Props) {
         input.click()
     }
 
-    const authorName = post.author?.full_name || "Anonymous"
-    const publishedDate = post.published_at
-        ? new Date(post.published_at)
-        : new Date(post.created_at)
+    const authorName = project.owner?.full_name || "Anonymous"
+    const publishedDate = project.published_at
+        ? new Date(project.published_at)
+        : new Date(project.created_at)
     const formattedDate = format(publishedDate, "MMMM d, yyyy")
 
     const availableTags = allTags.filter(
-        (t) => !postTags.find((pt) => pt.id === t.id),
+        (t) => !projectTags.find((pt) => pt.id === t.id),
     )
+
+    const normalizedProjectLinksPayload = useMemo(
+        () =>
+            settingsLinksDraft.map((link) => ({
+                label: (link.label || "").trim(),
+                url: (link.url || "").trim(),
+                link_type: link.link_type || undefined,
+            })).filter((link) => link.label || link.url),
+        [settingsLinksDraft],
+    )
+
+    const handleAddProjectLink = () => {
+        const label = newLinkLabel.trim()
+        const url = newLinkUrl.trim()
+        if (!label && !url) return
+        setSettingsLinksDraft((prev) => [
+            ...prev,
+            {
+                id: `${project.id}:${Date.now()}`,
+                project_id: project.id,
+                label: label || url,
+                url,
+                link_type: null,
+                sort_order: prev.length,
+            },
+        ])
+        setNewLinkLabel("")
+        setNewLinkUrl("")
+    }
+
+    const handleRemoveProjectLink = (index: number) => {
+        setSettingsLinksDraft((prev) =>
+            prev
+                .filter((_, i) => i !== index)
+                .map((link, i) => ({ ...link, sort_order: i })),
+        )
+    }
+
+    const openSettingsModal = () => {
+        setSettingsSummaryDraft(summary)
+        setSettingsLinksDraft(projectLinks)
+        setNewLinkLabel("")
+        setNewLinkUrl("")
+        setShowSettingsModal(true)
+    }
+
+    const handleSaveSettings = async () => {
+        if (!isEditable || isSavingSettings) return
+        setIsSavingSettings(true)
+        try {
+            const updatedProject = await updateProject(
+                project.id,
+                {
+                    summary: settingsSummaryDraft,
+                },
+                undefined,
+                normalizedProjectLinksPayload,
+            )
+            setProject(updatedProject)
+            setSummary(updatedProject.summary || "")
+
+            setProjectLinks(updatedProject.links || [])
+            setShowSettingsModal(false)
+        } catch (error) {
+            console.error("Failed to save settings:", error)
+        } finally {
+            setIsSavingSettings(false)
+        }
+    }
 
     // Non-author readers: show loading state or "not published" message
     if (!isEditable) {
@@ -444,9 +538,9 @@ export function SeamlessPostView({ post: initialPost, mode = "view" }: Props) {
                 <div className="container max-w-4xl mx-auto py-8 md:py-12 text-center">
                     <GlobeLock className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
                     <h1 className="text-2xl font-bold mb-2">Not Yet Published</h1>
-                    <p className="text-muted-foreground">This post is still being worked on.</p>
-                    <Link href="/blog" className="text-sm text-primary hover:underline mt-4 inline-block">
-                        ← Back to all posts
+                    <p className="text-muted-foreground">This project is still being worked on.</p>
+                    <Link href="/projects" className="text-sm text-primary hover:underline mt-4 inline-block">
+                        ← Back to all projects
                     </Link>
                 </div>
             )
@@ -458,10 +552,10 @@ export function SeamlessPostView({ post: initialPost, mode = "view" }: Props) {
             {/* Back link */}
             <div className="mb-6">
                 <Link
-                    href={mode === "edit" ? "/admin/blog/posts" : "/blog"}
+                    href={mode === "edit" ? "/admin/projects" : "/projects"}
                     className="text-sm text-muted-foreground hover:underline"
                 >
-                    {mode === "edit" ? "← Back to admin" : "← Back to all posts"}
+                    {mode === "edit" ? "← Back to admin" : "← Back to all projects"}
                 </Link>
             </div>
 
@@ -499,6 +593,11 @@ export function SeamlessPostView({ post: initialPost, mode = "view" }: Props) {
 
                     <div className="flex-1" />
 
+                    <Button variant="ghost" size="sm" className="text-xs" onClick={openSettingsModal}>
+                        <Settings className="h-3.5 w-3.5 mr-1" />
+                        Settings
+                    </Button>
+
                     {/* Cover image */}
                     <Button
                         variant="ghost"
@@ -521,7 +620,7 @@ export function SeamlessPostView({ post: initialPost, mode = "view" }: Props) {
                         <PopoverContent className="w-72">
                             <div className="space-y-3">
                                 <div className="flex flex-wrap gap-1.5">
-                                    {postTags.map((tag) => (
+                                    {projectTags.map((tag) => (
                                         <Badge
                                             key={tag.id}
                                             variant="secondary"
@@ -631,8 +730,8 @@ export function SeamlessPostView({ post: initialPost, mode = "view" }: Props) {
             {isEditable && showHistory && (
                 <div className="mb-6">
                     <VersionHistory
-                        postId={post.id}
-                        publishedVersionId={(post as any).published_version_id || null}
+                        projectId={project.id}
+                        publishedVersionId={(project as any).published_version_id || null}
                         onVersionRestored={() => {
                             setShowHistory(false)
                             window.location.reload()
@@ -642,10 +741,10 @@ export function SeamlessPostView({ post: initialPost, mode = "view" }: Props) {
             )}
 
             {/* Cover image */}
-            {post.cover_image && (
+            {project.cover_image && (
                 <div className="mb-8 rounded-2xl overflow-hidden">
                     <img
-                        src={post.cover_image}
+                        src={project.cover_image}
                         alt={title}
                         className="w-full h-64 md:h-80 object-cover"
                     />
@@ -659,7 +758,7 @@ export function SeamlessPostView({ post: initialPost, mode = "view" }: Props) {
                     value={title}
                     onChange={(e) => handleTitleChange(e.target.value)}
                     className="w-full text-3xl md:text-5xl font-bold mb-4 bg-transparent border-none outline-none focus:ring-0 placeholder:text-muted-foreground/50"
-                    placeholder="Post title…"
+                    placeholder="Project title…"
                 />
             ) : (
                 <h1 className="text-3xl md:text-5xl font-bold mb-4">{displayTitle}</h1>
@@ -668,9 +767,9 @@ export function SeamlessPostView({ post: initialPost, mode = "view" }: Props) {
             {/* Author & meta info */}
             <div className="flex flex-wrap items-center gap-4 mb-8">
                 <div className="flex items-center gap-2">
-                    {post.author?.avatar_url ? (
+                    {project.owner?.avatar_url ? (
                         <img
-                            src={post.author.avatar_url}
+                            src={project.owner.avatar_url}
                             alt={authorName}
                             className="w-8 h-8 rounded-full"
                         />
@@ -684,17 +783,16 @@ export function SeamlessPostView({ post: initialPost, mode = "view" }: Props) {
 
                 <span className="text-sm text-muted-foreground">{formattedDate}</span>
 
-                {postTags.length > 0 && (
+                {projectTags.length > 0 && (
                     <div className="flex flex-wrap gap-2">
-                        {postTags.map((tag) => (
-                            <Link key={tag.id} href={`/blog/tags/${tag.id}`}>
-                                <Badge
-                                    variant="secondary"
-                                    className="hover:bg-secondary/80 transition-colors"
-                                >
-                                    {tag.name}
-                                </Badge>
-                            </Link>
+                        {projectTags.map((tag) => (
+                            <Badge
+                                key={tag.id}
+                                variant="secondary"
+                                className="hover:bg-secondary/80 transition-colors"
+                            >
+                                {tag.name}
+                            </Badge>
                         ))}
                     </div>
                 )}
@@ -705,13 +803,13 @@ export function SeamlessPostView({ post: initialPost, mode = "view" }: Props) {
                 <BlockNoteEditor
                     initialContent={initialBlocks}
                     editable={isEditable}
-                    postId={post.id}
+                    projectId={project.id}
                     onSaveStatusChange={setSaveStatus}
                     onAutosaveCommitted={() => {
                         if (!isEditable || isSavingVersion) return
                         if (autoVersionSaveTimer.current) clearTimeout(autoVersionSaveTimer.current)
                         autoVersionSaveTimer.current = setTimeout(() => {
-                            smartSaveVersion("Auto save").catch(() => {})
+                            smartSaveVersion("Auto save").catch(() => { })
                         }, 1500)
                     }}
                     onChange={(blocks) => {
@@ -722,8 +820,130 @@ export function SeamlessPostView({ post: initialPost, mode = "view" }: Props) {
                 />
             </div>
 
-            {/* Comments */}
-            {post.enable_comments && !isEditable && <Comments postId={post.id} />}
+            {projectLinks.length > 0 && (
+                <div className="mt-8 pt-6 border-t">
+                    <h3 className="font-medium mb-3">Links</h3>
+                    <div className="flex flex-wrap gap-2">
+                        {projectLinks.map((link, index) => (
+                            <Button
+                                key={link.id || `${link.url}-${index}`}
+                                variant="outline"
+                                size="sm"
+                                asChild
+                            >
+                                <a href={link.url} target="_blank" rel="noopener noreferrer">
+                                    {link.label || link.url}
+                                </a>
+                            </Button>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {!isEditable && (
+                <div className="mt-12">
+                    <Card className="bg-card/50 border border-border/50">
+                        <CardHeader>
+                            <CardTitle className="text-xl">Have a question about {displayTitle}?</CardTitle>
+                            <CardDescription>
+                                Reach out if you want more details about the project.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardFooter>
+                            <Button asChild>
+                                <Link href="/contact" className="flex items-center gap-2">
+                                    <MessageSquare className="h-4 w-4" />
+                                    Get in touch
+                                </Link>
+                            </Button>
+                        </CardFooter>
+                    </Card>
+                </div>
+            )}
+
+            <Dialog open={showSettingsModal} onOpenChange={setShowSettingsModal}>
+                <DialogContent className="sm:max-w-xl bg-background/90 backdrop-blur-xl border-border/60">
+                    <DialogHeader>
+                        <DialogTitle>Project Settings</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                        <div className="space-y-2">
+                            <Label className="text-xs">Summary</Label>
+                            <Textarea
+                                value={settingsSummaryDraft}
+                                onChange={(e) => setSettingsSummaryDraft(e.target.value)}
+                                placeholder="Short summary for project cards and previews"
+                                className="min-h-20 text-sm"
+                            />
+                            <p className="text-[11px] text-muted-foreground">
+                                Metadata only. Saved immediately to the live project (not versioned).
+                            </p>
+                        </div>
+
+                        <div className="space-y-2 border-t pt-3">
+                            <Label className="text-xs">Links</Label>
+                            <div className="space-y-2">
+                                {settingsLinksDraft.length === 0 && (
+                                    <p className="text-xs text-muted-foreground">No links added yet</p>
+                                )}
+                                {settingsLinksDraft.map((link, index) => (
+                                    <div key={link.id || `${link.url}-${index}`} className="flex items-center gap-2">
+                                        <div className="min-w-0 flex-1 rounded-md border px-2 py-1.5">
+                                            <p className="text-xs font-medium truncate">{link.label || "Untitled link"}</p>
+                                            <p className="text-[11px] text-muted-foreground truncate">{link.url}</p>
+                                        </div>
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="icon"
+                                            className="h-7 w-7"
+                                            onClick={() => handleRemoveProjectLink(index)}
+                                        >
+                                            <Trash2 className="h-3.5 w-3.5" />
+                                        </Button>
+                                    </div>
+                                ))}
+                            </div>
+                            <div className="space-y-2 rounded-md border p-2">
+                                <Input
+                                    value={newLinkLabel}
+                                    onChange={(e) => setNewLinkLabel(e.target.value)}
+                                    placeholder="Label (e.g. GitHub)"
+                                    className="h-8 text-sm"
+                                />
+                                <div className="flex gap-2">
+                                    <Input
+                                        value={newLinkUrl}
+                                        onChange={(e) => setNewLinkUrl(e.target.value)}
+                                        onKeyDown={(e) => e.key === "Enter" && handleAddProjectLink()}
+                                        placeholder="https://..."
+                                        className="h-8 text-sm"
+                                    />
+                                    <Button type="button" variant="outline" size="sm" onClick={handleAddProjectLink} className="h-8">
+                                        <LinkIcon className="h-3.5 w-3.5" />
+                                    </Button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button type="button" variant="ghost" onClick={() => setShowSettingsModal(false)} disabled={isSavingSettings}>
+                            Cancel
+                        </Button>
+                        <Button type="button" onClick={handleSaveSettings} disabled={isSavingSettings}>
+                            {isSavingSettings ? (
+                                <>
+                                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                    Saving...
+                                </>
+                            ) : (
+                                "Save Settings"
+                            )}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
         </div>
     )
 }

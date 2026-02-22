@@ -4,18 +4,18 @@ import { motion } from "framer-motion"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { AlertTriangle } from "lucide-react"
-import { NotionImage } from "@/components/notion-image"
+import Image from "next/image"
 import Link from "next/link"
+import type { Project } from "@/lib/project-service"
 
-export function ProjectList({ projects }: { projects: any[] }) {
+export function ProjectList({ projects }: { projects: Project[] }) {
   if (!projects || projects.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-center">
         <AlertTriangle className="h-12 w-12 text-muted-foreground mb-4" />
         <h3 className="text-xl font-medium mb-2">No projects found</h3>
         <p className="text-muted-foreground max-w-md">
-          No published projects were found in your Notion database. Make sure you have projects with the "Published"
-          status.
+          No published projects are available at the moment.
         </p>
       </div>
     )
@@ -34,14 +34,17 @@ export function ProjectList({ projects }: { projects: any[] }) {
         >
           <Link href={`/projects/${project.slug || project.id}`} className="block h-full">
             <Card className="h-full hover:shadow-md transition-shadow overflow-hidden flex flex-col border border-border">
-              <div className="relative h-48 w-full overflow-hidden">
-                <NotionImage
-                  src={project.imageUrl || "/placeholder.svg?height=400&width=600"}
-                  alt={project.title}
-                  fill
-                  className="w-full h-full"
-                />
-              </div>
+              {project.cover_image && (
+                <div className="relative h-48 w-full overflow-hidden">
+                  <Image
+                    src={project.cover_image}
+                    alt={project.title}
+                    fill
+                    className="object-cover"
+                    unoptimized
+                  />
+                </div>
+              )}
               <CardHeader>
                 <CardTitle>{project.title}</CardTitle>
               </CardHeader>
@@ -51,9 +54,9 @@ export function ProjectList({ projects }: { projects: any[] }) {
               <CardFooter>
                 <div className="flex flex-wrap gap-2">
                   {project.tags &&
-                    project.tags.map((tag: string) => (
-                      <Badge key={tag} variant="secondary">
-                        {tag}
+                    project.tags.map((tag) => (
+                      <Badge key={tag.id} variant="secondary">
+                        {tag.name}
                       </Badge>
                     ))}
                 </div>

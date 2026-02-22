@@ -8,7 +8,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { AlertCircle, RefreshCw } from "lucide-react"
 
-export default function BlogTagsPage() {
+export default function AdminTagsPage() {
   const [tags, setTags] = useState<Tag[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
@@ -54,7 +54,7 @@ export default function BlogTagsPage() {
   return (
     <div>
       <h1 className="text-3xl font-bold mb-6">Tags</h1>
-      
+
       {error && (
         <Alert variant="destructive" className="mb-6">
           <AlertCircle className="h-4 w-4" />

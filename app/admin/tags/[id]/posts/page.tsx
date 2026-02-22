@@ -9,14 +9,13 @@ import Link from "next/link"
 export default async function AdminTagPostsPage({ params }: { params: { id: string } }) {
   try {
     const tagId = params.id
-    // Modified function call order: tagId, page, pageSize, onlyPublished
     const { posts, tag } = await getPostsByTagId(tagId, 1, 10, false)
 
     return (
       <div>
         <div className="flex flex-col mb-8">
           <h1 className="text-3xl font-bold">Posts tagged with "{tag.name}"</h1>
-          <Link href="/admin/blog/tags" className="text-sm text-muted-foreground hover:underline mt-2">
+          <Link href="/admin/tags" className="text-sm text-muted-foreground hover:underline mt-2">
             ← Back to all tags
           </Link>
         </div>

@@ -1,5 +1,5 @@
 import type { MetadataRoute } from "next"
-import { getProjects } from "@/lib/notion"
+import { getProjects } from "@/lib/project-service"
 
 export const revalidate = 3600  // 1 hour
 
@@ -37,7 +37,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   try {
     // 프로젝트 데이터 가져오기
-    const projects = await getProjects()
+    const projects = await getProjects(true)
 
     // 프로젝트 경로 생성
     const projectRoutes = projects.map((project) => {

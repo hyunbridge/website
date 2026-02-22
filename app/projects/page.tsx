@@ -1,11 +1,11 @@
 import { Suspense } from "react"
-import { getProjects } from "@/lib/notion"
+import { getProjects } from "@/lib/project-service"
 import { ProjectList } from "./project-list"
 import { ProjectSkeleton } from "@/components/skeletons"
 import { ErrorBoundary } from "@/components/error-boundary"
 import { ErrorMessage } from "@/components/error-message"
 
-export const revalidate = 300 // 5 minutes
+export const dynamic = "force-dynamic"
 
 export const metadata = {
   title: "Projects | Hyungyo Seo",
@@ -24,9 +24,6 @@ export default async function ProjectsPage() {
 }
 
 async function ProjectListWrapper() {
-  // Let errors bubble up to be caught by error.tsx
-  // This ensures that if the API fails, revalidation fails and the old cache is kept
-  const projects = await getProjects()
+  const projects = await getProjects(true)
   return <ProjectList projects={projects} />
 }
-

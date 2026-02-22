@@ -44,7 +44,7 @@ export function TagList({
     if (onTagSelect) {
       onTagSelect(tag.id)
     } else if (isAdmin) {
-      router.push(`/admin/blog/tags/${tag.id}/posts`)
+      router.push(`/admin/tags/${tag.id}/posts`)
     } else {
       router.push(`/blog/tags/${tag.id}`)
     }

@@ -71,7 +71,7 @@ export default function BlogPostsPage() {
       const draftData = {
         title: `Untitled Draft - ${formattedDate}, ${formattedTime}`,
         slug: `${randomWord1}-${randomWord2}-${randomNum}`,
-        content: "",
+        content: "[]",
         author_id: user.id,
         summary: "",
         cover_image: null,
