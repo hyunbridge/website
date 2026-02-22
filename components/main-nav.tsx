@@ -1,14 +1,17 @@
 "use client"
 
+import { useState } from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { motion } from "framer-motion"
-import { Home, FolderKanban, FileText, BookOpen, Menu, MessageSquare } from "lucide-react"
+import { Home, FolderKanban, FileText, BookOpen, Menu, MessageSquare, PenSquare } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { useMobileMenu } from "@/hooks/use-mobile-menu"
+import { useAuth } from "@/contexts/auth-context"
+import { supabase } from "@/lib/supabase"
 
 const navItems = [
   {
@@ -52,6 +55,8 @@ export function MainNav() {
   const pathname = usePathname()
   const router = useRouter()
   const { isOpen, setIsOpen } = useMobileMenu()
+  const { user } = useAuth()
+  const [isCreating, setIsCreating] = useState(false)
 
   const handleNavigation = (href: string, external?: boolean) => {
     if (external) {
@@ -59,6 +64,30 @@ export function MainNav() {
     } else {
       router.push(href)
       setIsOpen(false)
+    }
+  }
+
+  const handleNewPost = async () => {
+    if (isCreating) return
+    setIsCreating(true)
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session?.access_token) return
+
+      const res = await fetch("/api/blog/create", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      })
+      if (!res.ok) throw new Error("Failed to create post")
+      const { slug } = await res.json()
+      router.push(`/blog/${slug}`)
+    } catch (err) {
+      console.error("Failed to create new post:", err)
+    } finally {
+      setIsCreating(false)
     }
   }
 
@@ -99,6 +128,21 @@ export function MainNav() {
           </div>
 
           <div className="flex items-center gap-2">
+            {/* New Post button - only for authenticated users */}
+            {user && (
+              <div className="hidden md:block">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={handleNewPost}
+                  disabled={isCreating}
+                  title="New Post"
+                >
+                  <PenSquare className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
+
             {/* Desktop Theme Toggle */}
             <div className="hidden md:block">
               <ThemeToggle />

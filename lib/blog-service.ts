@@ -13,6 +13,7 @@ export type Post = {
   cover_image: string | null
   is_published: boolean
   published_at: string | null
+  published_version_id?: string | null
   enable_comments: boolean
   tags?: Tag[]
   author?: {
@@ -35,7 +36,7 @@ export type PostImage = {
 }
 
 export async function getBlogPostCount() {
-  const { count, error } = await supabase.from("blog_posts").select("*", { count: "exact", head: true })
+  const { count, error } = await supabase.from("posts").select("*", { count: "exact", head: true }).eq("is_published", true)
 
   if (error) {
     console.error("Error fetching blog post count:", error)
@@ -108,11 +109,15 @@ export async function getPostBySlug(slug: string) {
   `,
     )
     .eq("slug", slug)
-    .single()
+    .maybeSingle()
 
   if (error) {
     console.error("Error fetching post by slug:", error)
     throw error
+  }
+
+  if (!data) {
+    return null
   }
 
   return {
@@ -219,19 +224,20 @@ export async function getPostsByTagId(tagId: string, page = 1, pageSize = 10, on
       .eq("tag_id", tagId)
 
     if (postTagsError) throw postTagsError
-    
+
     // Return empty array if no post_ids are found
     if (!postTagsData || postTagsData.length === 0) {
       return { tag: tagData, posts: [] }
     }
-    
+
     // Extract post_id list
     const postIds = postTagsData.map(pt => pt.post_id)
-    
+
     // Get the posts corresponding to these post_ids
     let query = supabase
       .from("posts")
       .select("*, author:secure_profiles!author_id(id, full_name, avatar_url), tags:post_tags(tag_id, tags(id, name, slug))")
+      .in("id", postIds)
 
     if (onlyPublished) {
       query = query.eq("is_published", true)
@@ -258,6 +264,21 @@ export async function getPostsByTagId(tagId: string, page = 1, pageSize = 10, on
     console.error("Error fetching posts by tag ID:", error)
     throw error
   }
+}
+
+export async function getPublishedVersionSnapshot(versionId: string) {
+  const { data, error } = await supabase
+    .from("post_versions")
+    .select("id, title, summary, content")
+    .eq("id", versionId)
+    .single()
+
+  if (error) {
+    console.error("Error fetching published version snapshot:", error)
+    throw error
+  }
+
+  return data as { id: string; title: string; summary: string | null; content: string }
 }
 
 // Create a new post
@@ -639,4 +660,3 @@ export async function restorePostVersion(postId: string, versionNumber: number, 
     }
   }
 }
-

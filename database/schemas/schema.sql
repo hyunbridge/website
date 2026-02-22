@@ -68,6 +68,7 @@ CREATE TABLE IF NOT EXISTS public.posts (
     cover_image text NULL, -- URL for the post's cover image (optional)
     is_published boolean NOT NULL DEFAULT false, -- Flag indicating if the post is publicly visible
     published_at timestamp with time zone NOT NULL DEFAULT now(), -- Timestamp when the post was published
+    published_version_id uuid NULL, -- Points to the post_versions row that public readers should see
     enable_comments boolean NOT NULL DEFAULT true, -- Flag to enable/disable comments on the post
 
     -- Constraints
@@ -144,6 +145,15 @@ CREATE TABLE IF NOT EXISTS public.post_versions (
 
 COMMENT ON TABLE public.post_versions IS 'Tracks the history of changes (versions) for each blog post.';
 
+-- Link posts to a published version snapshot (added after post_versions exists)
+ALTER TABLE public.posts
+  ADD CONSTRAINT posts_published_version_id_fkey
+  FOREIGN KEY (published_version_id)
+  REFERENCES public.post_versions(id)
+  ON DELETE SET NULL;
+
+COMMENT ON COLUMN public.posts.published_version_id IS 'Points to the post_versions row that public readers see. NULL means readers see posts.content directly (legacy behavior).';
+
 
 -- Section 4: Indexes
 -- -----------------------------------------
@@ -156,6 +166,7 @@ COMMENT ON TABLE public.post_versions IS 'Tracks the history of changes (version
 CREATE INDEX IF NOT EXISTS idx_posts_author_id ON public.posts USING btree (author_id) TABLESPACE pg_default; -- For finding posts by author
 CREATE INDEX IF NOT EXISTS idx_posts_slug ON public.posts USING btree (slug) TABLESPACE pg_default; -- For finding posts by slug (already unique, but index helps)
 CREATE INDEX IF NOT EXISTS idx_posts_published ON public.posts USING btree (is_published, published_at DESC) TABLESPACE pg_default; -- For efficiently querying published posts, ordered by publish date
+CREATE INDEX IF NOT EXISTS idx_posts_published_version_id ON public.posts USING btree (published_version_id) TABLESPACE pg_default; -- For joining to the published snapshot
 
 -- Indexes for 'tags' table
 CREATE INDEX IF NOT EXISTS idx_tags_slug ON public.tags USING btree (slug) TABLESPACE pg_default; -- For finding tags by slug (already unique)
@@ -322,6 +333,16 @@ CREATE POLICY "Authors can view versions of their own posts."
                                          )
                                          );
 
+CREATE POLICY "Anyone can read a published version."
+  ON public.post_versions FOR SELECT
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.posts
+      WHERE posts.published_version_id = post_versions.id
+        AND posts.is_published = true
+    )
+  );
+
 CREATE POLICY "Authors can insert versions for their own posts."
   ON public.post_versions FOR INSERT
   WITH CHECK (
@@ -332,6 +353,33 @@ CREATE POLICY "Authors can insert versions for their own posts."
     EXISTS (
       SELECT 1 FROM public.posts
       WHERE posts.id = post_versions.post_id AND posts.author_id = auth.uid()
+    )
+  );
+
+CREATE POLICY "Authors can update versions of their own posts."
+  ON public.post_versions FOR UPDATE
+  USING (
+    auth.role() = 'authenticated' AND
+    EXISTS (
+      SELECT 1 FROM public.posts
+      WHERE posts.id = post_versions.post_id AND posts.author_id = auth.uid()
+    ) AND
+    NOT EXISTS (
+      SELECT 1 FROM public.posts
+      WHERE posts.published_version_id = post_versions.id
+        AND posts.is_published = true
+    )
+  )
+  WITH CHECK (
+    auth.role() = 'authenticated' AND
+    EXISTS (
+      SELECT 1 FROM public.posts
+      WHERE posts.id = post_versions.post_id AND posts.author_id = auth.uid()
+    ) AND
+    NOT EXISTS (
+      SELECT 1 FROM public.posts
+      WHERE posts.published_version_id = post_versions.id
+        AND posts.is_published = true
     )
   );
 
@@ -346,7 +394,7 @@ USING (
     )
   );
 
-COMMENT ON TABLE public.post_versions IS 'Tracks the history of changes (versions) for each blog post. RLS allows authors to insert/delete versions and view versions of their own posts.';
+COMMENT ON TABLE public.post_versions IS 'Tracks the history of changes (versions) for each blog post. RLS allows authors to insert/delete/update non-published versions and view versions of their own posts; published snapshots are also readable publicly.';
 
 -- Section 7: Security Views for Column Level Protection
 -- -----------------------------------------

@@ -249,3 +249,20 @@
   display: none;
 }
 
+/* BlockNote seamless mode — align content with page layout */
+.blocknote-seamless .bn-editor {
+  padding-inline: 0;
+}
+
+.blocknote-seamless .bn-side-menu {
+  /* Pull side menu into negative space so content stays flush */
+  position: absolute;
+  left: -48px;
+}
+
+/* In read-only mode, hide side menu entirely */
+.blocknote-seamless[data-readonly="true"] .bn-side-menu,
+.blocknote-seamless .bn-editor[contenteditable="false"] + .bn-side-menu {
+  display: none;
+}
+

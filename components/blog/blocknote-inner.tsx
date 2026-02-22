@@ -1,0 +1,188 @@
+"use client"
+
+import { useCallback, useEffect, useRef } from "react"
+import { type Block } from "@blocknote/core"
+import { useCreateBlockNote } from "@blocknote/react"
+import { BlockNoteView } from "@blocknote/mantine"
+import "@blocknote/core/fonts/inter.css"
+import "@blocknote/mantine/style.css"
+import { supabase } from "@/lib/supabase"
+import { useTheme } from "next-themes"
+
+type Props = {
+    initialContent?: Block[]
+    editable?: boolean
+    postId?: string
+    onChange?: (blocks: Block[]) => void
+    onSaveStatusChange?: (status: "idle" | "saving" | "saved" | "error") => void
+    onAutosaveCommitted?: () => void
+}
+
+// ─── Similarity Engine ──────────────────────────────────────────────
+// Jaccard similarity on word-level bigrams for detecting meaningful changes
+function textSimilarity(a: string, b: string): number {
+    if (a === b) return 1
+    if (!a || !b) return 0
+
+    const wordsA = a.toLowerCase().split(/\s+/).filter(Boolean)
+    const wordsB = b.toLowerCase().split(/\s+/).filter(Boolean)
+
+    if (wordsA.length === 0 && wordsB.length === 0) return 1
+    if (wordsA.length === 0 || wordsB.length === 0) return 0
+
+    const setA = new Set(wordsA)
+    const setB = new Set(wordsB)
+
+    let intersection = 0
+    for (const word of setA) {
+        if (setB.has(word)) intersection++
+    }
+
+    const union = setA.size + setB.size - intersection
+    return union === 0 ? 1 : intersection / union
+}
+
+function blocksToText(content: string): string {
+    try {
+        const blocks = JSON.parse(content)
+        if (!Array.isArray(blocks)) return content
+        return blocks.map((block: any) => {
+            let text = ""
+            if (block.content) {
+                for (const item of block.content) {
+                    if (item.type === "text") text += item.text || ""
+                }
+            }
+            if (block.children?.length) {
+                text += " " + block.children.map((c: any) => {
+                    if (c.content) return c.content.map((i: any) => i.text || "").join("")
+                    return ""
+                }).join(" ")
+            }
+            return text
+        }).filter(Boolean).join(" ")
+    } catch {
+        return content || ""
+    }
+}
+
+// Threshold: below this similarity → new version, above → update existing
+const SIMILARITY_THRESHOLD = 0.85
+
+// ─── Component ──────────────────────────────────────────────────────
+export default function BlockNoteInnerEditor({
+    initialContent,
+    editable = false,
+    postId,
+    onChange,
+    onSaveStatusChange,
+    onAutosaveCommitted,
+}: Props) {
+    const { resolvedTheme } = useTheme()
+    const saveTimerRef = useRef<NodeJS.Timeout | null>(null)
+    const isMountedRef = useRef(true)
+
+    useEffect(() => {
+        return () => {
+            isMountedRef.current = false
+            if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
+        }
+    }, [])
+
+    // Custom image upload handler
+    const uploadFile = useCallback(
+        async (file: File) => {
+            if (!postId) return ""
+            try {
+                const { data: { session } } = await supabase.auth.getSession()
+                if (!session?.access_token) throw new Error("Not authenticated")
+
+                const { data: imageData, error: insertError } = await supabase
+                    .from("post_images")
+                    .insert({ post_id: postId, url: "" })
+                    .select("id")
+                    .single()
+                if (insertError || !imageData) throw new Error("Failed to create image record")
+
+                const imageId = imageData.id
+                const ext = file.name.split(".").pop() || ""
+                const fileName = `blog/${postId}/${imageId}${ext ? `.${ext}` : ""}`
+                const contentType = file.type
+
+                const presignedRes = await fetch("/api/s3/presigned-url", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${session.access_token}`,
+                    },
+                    body: JSON.stringify({ key: fileName, contentType }),
+                })
+                if (!presignedRes.ok) throw new Error("Failed to get presigned URL")
+                const { url, fileUrl } = await presignedRes.json()
+
+                await fetch(url, { method: "PUT", headers: { "Content-Type": contentType }, body: file })
+                await supabase.from("post_images").update({ url: fileUrl }).eq("id", imageId)
+                return fileUrl
+            } catch (error) {
+                console.error("Image upload failed:", error)
+                return ""
+            }
+        },
+        [postId],
+    )
+
+    const editor = useCreateBlockNote({
+        initialContent: initialContent && initialContent.length > 0 ? initialContent : undefined,
+        uploadFile: editable ? uploadFile : undefined,
+    })
+
+    // Auto-save: only saves draft (posts.content). Versioning is handled separately.
+    const handleChange = useCallback(() => {
+        if (!editable) return
+
+        const blocks = editor.document
+        onChange?.(blocks)
+
+        if (postId) {
+            onSaveStatusChange?.("saving")
+
+            if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
+
+            saveTimerRef.current = setTimeout(async () => {
+                try {
+                    const contentJson = JSON.stringify(blocks)
+
+                    const { error } = await supabase
+                        .from("posts")
+                        .update({
+                            content: contentJson,
+                            updated_at: new Date().toISOString(),
+                        })
+                        .eq("id", postId)
+
+                    if (error) throw error
+                    if (isMountedRef.current) onSaveStatusChange?.("saved")
+                    onAutosaveCommitted?.()
+                } catch (err) {
+                    console.error("Auto-save failed:", err)
+                    if (isMountedRef.current) onSaveStatusChange?.("error")
+                }
+            }, 1000)
+        }
+    }, [editable, postId, editor, onChange, onSaveStatusChange, onAutosaveCommitted])
+
+    return (
+        <div className="blocknote-wrapper">
+            <BlockNoteView
+                editor={editor}
+                editable={editable}
+                onChange={handleChange}
+                theme={resolvedTheme === "dark" ? "dark" : "light"}
+                sideMenu={editable}
+            />
+        </div>
+    )
+}
+
+// ─── Exported utilities for version management ──────────────────────
+export { textSimilarity, blocksToText, SIMILARITY_THRESHOLD }
