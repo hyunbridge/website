@@ -4,18 +4,17 @@ import type React from "react"
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import type { Tag } from "@/types/supabase"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Pencil, Trash2 } from "lucide-react"
-import { updateTag, deleteTag } from "@/lib/blog-service"
+import { updateTag, deleteTag, type Tag } from "@/lib/blog-service"
 import { toast } from "@/hooks/use-toast"
 
 interface TagListProps {
-  tags: Tag[]
+  tags?: Tag[]
   isAdmin?: boolean
   onTagsChange?: () => void
   selectedTags?: string[]

@@ -50,14 +50,47 @@ export default function ProfilePage() {
         .from("profiles")
         .select("username, full_name, avatar_url")
         .eq("id", user.id)
-        .single()
+        .limit(2)
 
       if (error) {
         throw new Error(`Failed to load profile: ${error.message}`)
       }
 
-      setProfile(data)
-      setFullName(data.full_name || "")
+      const rows = data || []
+
+      if (rows.length === 0) {
+        const { data: createdProfile, error: createError } = await supabase
+          .from("profiles")
+          .insert({
+            id: user.id,
+            username: user.email || user.id,
+            full_name: null,
+            avatar_url: null,
+          })
+          .select("username, full_name, avatar_url")
+          .single()
+
+        if (createError) {
+          throw new Error(`Failed to create profile: ${createError.message}`)
+        }
+
+        setProfile(createdProfile)
+        setFullName(createdProfile.full_name || "")
+        return
+      }
+
+      if (rows.length > 1) {
+        console.warn(`Multiple profile rows found for user ${user.id}; using the first row`)
+      }
+
+      const profileRow = rows[0] || {
+        username: user.email || "",
+        full_name: null,
+        avatar_url: null,
+      }
+
+      setProfile(profileRow)
+      setFullName(profileRow.full_name || "")
     } catch (error) {
       console.error("Error fetching profile:", error)
       setProfileLoadError(error instanceof Error ? error.message : "Failed to load profile data")

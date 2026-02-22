@@ -3,7 +3,6 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { deletePost } from "@/lib/blog-service"
-import { deleteFromS3 } from "@/lib/s3-service"
 import { Button } from "@/components/ui/button"
 import { Trash2 } from "lucide-react"
 import {
@@ -33,18 +32,7 @@ export function DeletePostButton({ postId, postTitle }: DeletePostButtonProps) {
     try {
       setIsDeleting(true)
 
-      // Delete the post and get any associated image URLs
-      const imageUrls = await deletePost(postId)
-
-      // In a production environment, also delete the images from S3
-      if (imageUrls.length > 0) {
-        try {
-          await deleteFromS3(imageUrls)
-        } catch (error) {
-          console.error("Error deleting images from S3:", error)
-          // Continue even if image deletion fails
-        }
-      }
+      await deletePost(postId)
 
       setIsDeleteDialogOpen(false)
 

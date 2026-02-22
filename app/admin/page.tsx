@@ -4,45 +4,11 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { FileText, AlertCircle, RefreshCw } from "lucide-react"
 import Link from "next/link"
-import { supabase } from "@/lib/supabase"
-
-async function getBlogPostCount() {
-  try {
-    const { count, error } = await supabase.from("posts").select("*", { count: "exact", head: true })
-
-    if (error) {
-      throw new Error(`Failed to fetch blog post count: ${error.message}`)
-    }
-
-    return count || 0
-  } catch (error) {
-    console.error("Error fetching blog post count:", error)
-    throw error
-  }
-}
-
-async function getRecentPosts(limit = 5) {
-  try {
-    const { data, error } = await supabase
-      .from("posts")
-      .select("id, title, slug, created_at")
-      .order("created_at", { ascending: false })
-      .limit(limit)
-
-    if (error) {
-      throw new Error(`Failed to fetch recent posts: ${error.message}`)
-    }
-
-    return data || []
-  } catch (error) {
-    console.error("Error fetching recent posts:", error)
-    throw error
-  }
-}
+import { getBlogPostCount, getRecentPosts, type RecentPostSummary } from "@/lib/blog-service"
 
 export default async function AdminDashboard() {
   let postCount = 0
-  let recentPosts = []
+  let recentPosts: RecentPostSummary[] = []
   let hasPostCountError = false
   let hasRecentPostsError = false
   let postCountError = ""

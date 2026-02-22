@@ -1,35 +1,74 @@
 import { supabase } from "@/lib/supabase"
 
-export async function uploadToS3(file: File, postId: string): Promise<string> {
-  let imageId: string | null = null
+type PresignedPayload = { url: string; fileUrl: string }
 
+async function recordUploadedImageAsset(params: {
+  postId: string
+  fileUrl: string
+  objectKey: string
+  contentType?: string
+  sizeBytes?: number
+}) {
+  const {
+    data: { session },
+    error: sessionError,
+  } = await supabase.auth.getSession()
+  if (sessionError || !session?.access_token) {
+    throw new Error("Unauthorized: no valid session for asset recording")
+  }
+
+  const response = await fetch("/api/s3/record-image", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${session.access_token}`,
+    },
+    body: JSON.stringify({
+      postId: params.postId,
+      url: params.fileUrl,
+      objectKey: params.objectKey,
+      contentType: params.contentType || null,
+      sizeBytes: params.sizeBytes ?? null,
+    }),
+  })
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => null)
+    throw new Error(errorData?.error || "Failed to record uploaded asset")
+  }
+}
+
+export async function uploadToS3(
+  arg1: File | PresignedPayload,
+  arg2: string | File,
+  arg3?: string,
+): Promise<string> {
   try {
-    // Step 1: Insert a record into post_images to get the imageID (PK)
-    // Use the authenticated user's session for the insert operation implicitly via RLS
-    const { data: imageData, error: insertError } = await supabase
-      .from("post_images")
-      .insert({ post_id: postId, url: "" })
-      .select("id")
-      .single()
+    let payload: PresignedPayload
+    let file: File
+    let contentType: string
+    let blogObjectKey: string | null = null
+    let blogPostId: string | null = null
 
-    if (insertError || !imageData) {
-      console.error("Error inserting into post_images:", insertError)
-      throw new Error("Failed to create image record in database")
+    if (arg1 instanceof File && typeof arg2 === "string") {
+      // Blog editor signature: (file, postId)
+      file = arg1
+      const resourceId = arg2
+      const imageId = crypto.randomUUID()
+      const fileExtension = file.name.split(".").pop() || ""
+      const fileName = `assets/${resourceId}/${imageId}${fileExtension ? `.${fileExtension}` : ""}`
+      blogObjectKey = fileName
+      blogPostId = resourceId
+      contentType = file.type
+      payload = await getPresignedUrl(fileName, contentType)
+    } else {
+      // Generic signature used by profile page: (presignedPayload, file, contentType?)
+      payload = arg1 as PresignedPayload
+      file = arg2 as File
+      contentType = arg3 || file.type
     }
-    imageId = imageData.id
 
-    // Extract file extension from original filename
-    const fileExtension = file.name.split('.').pop() || '';
-
-    // Step 2: Construct the S3 key using postId, imageId and the original file extension
-    const fileName = `blog/${postId}/${imageId}${fileExtension ? `.${fileExtension}` : ''}`;
-    const contentType = file.type
-
-    // Step 3: Get presigned URL for the specific S3 key
-    const { url, fileUrl } = await getPresignedUrl(fileName, contentType)
-
-    // Step 4: Upload the file to S3
-    const uploadResponse = await fetch(url, {
+    const uploadResponse = await fetch(payload.url, {
       method: "PUT",
       headers: {
         "Content-Type": contentType,
@@ -41,30 +80,19 @@ export async function uploadToS3(file: File, postId: string): Promise<string> {
       throw new Error(`S3 upload failed: ${uploadResponse.statusText}`)
     }
 
-    // Step 5: Update the post_images record with the final S3 URL
-    const { error: updateError } = await supabase
-      .from("post_images")
-      .update({ url: fileUrl })
-      .eq("id", imageId)
-
-    if (updateError) {
-      console.error("Error updating post_images URL:", updateError)
-      // Consider deleting the S3 object here if the DB update fails
-      throw new Error("Failed to update image URL in database after S3 upload")
+    if (blogPostId && blogObjectKey) {
+      await recordUploadedImageAsset({
+        postId: blogPostId,
+        fileUrl: payload.fileUrl,
+        objectKey: blogObjectKey,
+        contentType,
+        sizeBytes: file.size,
+      })
     }
 
-    return fileUrl
+    return payload.fileUrl
   } catch (error) {
     console.error("Error uploading to S3:", error)
-    // Optional: Add cleanup logic here, e.g., delete the post_images record if it was created
-    if (imageId) {
-      try {
-        await supabase.from("post_images").delete().eq("id", imageId)
-        console.log(`Cleaned up post_images record: ${imageId}`)
-      } catch (cleanupError) {
-        console.error("Error cleaning up post_images record:", cleanupError)
-      }
-    }
     throw error
   }
 }

@@ -2,16 +2,16 @@
 
 import { useState, useEffect } from "react"
 import { TagList } from "@/components/blog/tag-list"
-import { getAllTags } from "@/lib/blog-service"
+import { getAllTags, type Tag } from "@/lib/blog-service"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { AlertCircle, RefreshCw } from "lucide-react"
 
 export default function BlogTagsPage() {
-  const [tags, setTags] = useState([])
+  const [tags, setTags] = useState<Tag[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState(null)
+  const [error, setError] = useState<Error | null>(null)
   const [errorMessage, setErrorMessage] = useState("")
 
   const fetchTags = async () => {
@@ -23,7 +23,7 @@ export default function BlogTagsPage() {
       setTags(tagsData)
     } catch (err) {
       console.error("Error fetching tags:", err)
-      setError(err)
+      setError(err instanceof Error ? err : new Error(String(err)))
       setErrorMessage(err instanceof Error ? err.message : "Failed to load tags. Please try again.")
     } finally {
       setIsLoading(false)

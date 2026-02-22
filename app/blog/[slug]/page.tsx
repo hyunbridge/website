@@ -4,12 +4,13 @@ import { SeamlessPostView } from "@/components/blog/seamless-post-view"
 import type { Metadata } from "next"
 
 type Props = {
-  params: { slug: string }
+  params: Promise<{ slug: string }>
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   try {
-    const post = await getPostBySlug(params.slug)
+    const { slug } = await params
+    const post = await getPostBySlug(slug)
     if (!post) {
       return { title: "Post Not Found" }
     }
@@ -41,9 +42,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function BlogPostPage({ params }: Props) {
+  const { slug } = await params
   let post
   try {
-    post = await getPostBySlug(params.slug)
+    post = await getPostBySlug(slug)
   } catch {
     notFound()
   }

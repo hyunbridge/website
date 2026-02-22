@@ -23,8 +23,25 @@ import {
     ChevronDown,
     Trash2,
 } from "lucide-react"
-import { supabase } from "@/lib/supabase"
-import { getAllTags, createTag, deletePost, type Tag, type Post } from "@/lib/blog-service"
+import {
+    addPostTag,
+    createPostVersionFromSnapshot,
+    createTag,
+    deletePost,
+    getAllTags,
+    getPostPublishedVersion,
+    getPostVersioningState,
+    publishPost,
+    recordPostImage,
+    removePostTag,
+    renamePost,
+    setPostCurrentVersion,
+    type Tag,
+    type Post,
+    unpublishPost,
+    updatePostCoverImage,
+    updatePostVersionSnapshot,
+} from "@/lib/blog-service"
 import Link from "next/link"
 import { format } from "date-fns"
 import { VersionHistory } from "./version-history"
@@ -40,6 +57,7 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { getPresignedUrl } from "@/lib/s3-service"
 
 type SaveStatus = "idle" | "saving" | "saved" | "error"
 
@@ -86,12 +104,8 @@ export function SeamlessPostView({ post: initialPost, mode = "view" }: Props) {
         setPublishedVersionLoading(true)
             ; (async () => {
                 try {
-                    const { data } = await supabase
-                        .from("post_versions")
-                        .select("title, content, summary")
-                        .eq("id", pvId)
-                        .single()
-                    if (data) setPublishedVersion(data)
+                    const data = await getPostPublishedVersion(pvId)
+                    if (data) setPublishedVersion({ title: data.title, content: data.content || "[]", summary: data.summary })
                 } catch {
                     // Published version fetch failed — will show "not published"
                 } finally {
@@ -136,33 +150,12 @@ export function SeamlessPostView({ post: initialPost, mode = "view" }: Props) {
     ): Promise<string | null> => {
         if (!isEditable || !post.id) return null
         try {
-            const { data: { session } } = await supabase.auth.getSession()
-            if (!session?.access_token) throw new Error("Not authenticated")
-            const { data: { user: authUser } } = await supabase.auth.getUser(session.access_token)
-            if (!authUser) throw new Error("No user")
-
-            // Get current draft
-            const { data: currentPost, error: fetchErr } = await supabase
-                .from("posts")
-                .select("title, content, summary, published_version_id")
-                .eq("id", post.id)
-                .single()
-            if (fetchErr || !currentPost) throw new Error("Failed to fetch post")
-
-            // Get latest version
-            const { data: latestVersions, error: latestVersionsErr } = await supabase
-                .from("post_versions")
-                .select("*")
-                .eq("post_id", post.id)
-                .order("version_number", { ascending: false })
-                .limit(1)
-            if (latestVersionsErr) throw latestVersionsErr
-
-            const latestVersion = latestVersions?.[0]
-            const currentText = blocksToText(currentPost.content || "[]")
+            if (!user?.id) throw new Error("No user")
+            const { item: currentPost, currentVersion, latestVersion } = await getPostVersioningState(post.id)
+            const currentText = blocksToText(currentVersion.body_text || "[]")
 
             if (latestVersion) {
-                const prevText = blocksToText(latestVersion.content || "[]")
+                const prevText = blocksToText(latestVersion.body_text || "[]")
                 const similarity = textSimilarity(prevText, currentText)
 
                 if (!options?.forceNewVersion && similarity >= SIMILARITY_THRESHOLD) {
@@ -170,17 +163,12 @@ export function SeamlessPostView({ post: initialPost, mode = "view" }: Props) {
 
                     if (!isPublishedSnapshot) {
                         // Small change → update existing latest version (only if it's not the published snapshot)
-                        const { error: updateVersionErr } = await supabase
-                            .from("post_versions")
-                            .update({
-                                title: currentPost.title || "Untitled",
-                                content: currentPost.content || "[]",
-                                summary: currentPost.summary || "",
-                                change_description: description || latestVersion.change_description,
-                            })
-                            .eq("id", latestVersion.id)
-
-                        if (updateVersionErr) throw updateVersionErr
+                        await updatePostVersionSnapshot(latestVersion.id, {
+                            title: currentVersion.title || currentPost.title || "Untitled",
+                            content: currentVersion.body_text || "[]",
+                            summary: currentVersion.summary || currentPost.summary || "",
+                            change_description: description || latestVersion.change_description,
+                        })
                         return latestVersion.id
                     }
                 }
@@ -188,17 +176,24 @@ export function SeamlessPostView({ post: initialPost, mode = "view" }: Props) {
 
             // Big change or no previous version → create new version
             const nextNum = latestVersion ? latestVersion.version_number + 1 : 1
-            const { data: newVersion, error: insertErr } = await supabase.from("post_versions").insert([{
-                post_id: post.id,
-                version_number: nextNum,
-                title: currentPost.title || "Untitled",
-                content: currentPost.content || "[]",
-                summary: currentPost.summary || "",
-                created_by: authUser.id,
-                change_description: description || `Version ${nextNum}`,
-            }]).select("id").single()
-            if (insertErr) throw insertErr
-            return newVersion?.id || null
+            const newVersionId = await createPostVersionFromSnapshot({
+                postId: post.id,
+                versionNumber: nextNum,
+                bodyFormat: currentVersion.body_format || "json",
+                title: currentVersion.title || currentPost.title || "Untitled",
+                content: currentVersion.body_text || "[]",
+                summary: currentVersion.summary || currentPost.summary || "",
+                createdBy: user.id,
+                changeDescription: description || `Version ${nextNum}`,
+                snapshotStatus: "draft",
+            })
+            await setPostCurrentVersion(
+                post.id,
+                newVersionId,
+                currentVersion.title || currentPost.title || "Untitled",
+                currentVersion.summary || currentPost.summary || "",
+            )
+            return newVersionId
         } catch (err) {
             console.error("Version save failed:", err)
             return null
@@ -228,14 +223,7 @@ export function SeamlessPostView({ post: initialPost, mode = "view" }: Props) {
             if (!versionId) throw new Error("Failed to save version")
 
             // 2. Point published_version_id to this version
-            const now = new Date().toISOString()
-            const { error: publishErr } = await supabase.from("posts").update({
-                is_published: true,
-                published_at: now,
-                published_version_id: versionId,
-                updated_at: now,
-            }).eq("id", post.id)
-            if (publishErr) throw publishErr
+            const { published_at: now } = await publishPost(post.id, versionId)
 
             setIsPublished(true)
             setPost((prev) => ({ ...prev, is_published: true, published_at: now, published_version_id: versionId } as any))
@@ -282,13 +270,7 @@ export function SeamlessPostView({ post: initialPost, mode = "view" }: Props) {
         if (autoVersionSaveTimer.current) clearTimeout(autoVersionSaveTimer.current)
         setSaveStatus("saving")
         try {
-            const { error } = await supabase.from("posts").update({
-                is_published: false,
-                published_version_id: null,
-                published_at: null,
-                updated_at: new Date().toISOString(),
-            }).eq("id", post.id)
-            if (error) throw error
+            await unpublishPost(post.id)
             setIsPublished(false)
             setPost((prev) => ({ ...prev, is_published: false, published_at: null, published_version_id: null } as any))
             setSaveStatus("saved")
@@ -315,11 +297,7 @@ export function SeamlessPostView({ post: initialPost, mode = "view" }: Props) {
                         .replace(/-+/g, "-")
                         .trim()
 
-                    const { error } = await supabase
-                        .from("posts")
-                        .update({ title: newTitle, slug, updated_at: new Date().toISOString() })
-                        .eq("id", post.id)
-                    if (error) throw error
+                    await renamePost(post.id, newTitle, slug)
                     setSaveStatus("saved")
                 } catch {
                     setSaveStatus("error")
@@ -334,7 +312,7 @@ export function SeamlessPostView({ post: initialPost, mode = "view" }: Props) {
         if (postTags.find((t) => t.id === tag.id)) return
         setPostTags((prev) => [...prev, tag])
         try {
-            await supabase.from("post_tags").insert({ post_id: post.id, tag_id: tag.id })
+            await addPostTag(post.id, tag.id)
         } catch (err) {
             console.error("Failed to add tag:", err)
             setPostTags((prev) => prev.filter((t) => t.id !== tag.id))
@@ -345,7 +323,7 @@ export function SeamlessPostView({ post: initialPost, mode = "view" }: Props) {
         const removed = postTags.find((t) => t.id === tagId)
         setPostTags((prev) => prev.filter((t) => t.id !== tagId))
         try {
-            await supabase.from("post_tags").delete().eq("post_id", post.id).eq("tag_id", tagId)
+            await removePostTag(post.id, tagId)
         } catch (err) {
             console.error("Failed to remove tag:", err)
             if (removed) setPostTags((prev) => [...prev, removed])
@@ -375,31 +353,12 @@ export function SeamlessPostView({ post: initialPost, mode = "view" }: Props) {
 
             setSaveStatus("saving")
             try {
-                const {
-                    data: { session },
-                } = await supabase.auth.getSession()
-                if (!session?.access_token) throw new Error("Not authenticated")
-
-                const fileName = `blog/${post.id}/cover.${file.name.split(".").pop()}`
+                const fileName = `assets/${post.id}/cover.${file.name.split(".").pop()}`
                 const contentType = file.type
-
-                const presignedRes = await fetch("/api/s3/presigned-url", {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        Authorization: `Bearer ${session.access_token}`,
-                    },
-                    body: JSON.stringify({ key: fileName, contentType }),
-                })
-                if (!presignedRes.ok) throw new Error("Failed to get presigned URL")
-                const { url, fileUrl } = await presignedRes.json()
-
+                const { url, fileUrl } = await getPresignedUrl(fileName, contentType)
                 await fetch(url, { method: "PUT", headers: { "Content-Type": contentType }, body: file })
-
-                await supabase
-                    .from("posts")
-                    .update({ cover_image: fileUrl, updated_at: new Date().toISOString() })
-                    .eq("id", post.id)
+                await recordPostImage(post.id, fileUrl, "cover")
+                await updatePostCoverImage(post.id, fileUrl)
 
                 setPost((prev) => ({ ...prev, cover_image: fileUrl }))
                 setSaveStatus("saved")

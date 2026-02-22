@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { PostList } from "@/components/blog/post-list"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Plus, Loader2, AlertCircle, RefreshCw } from "lucide-react"
-import { getPosts, createPost } from "@/lib/blog-service"
+import { getPosts, createPost, type Post } from "@/lib/blog-service"
 import { Card, CardContent } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useAuth } from "@/contexts/auth-context"
@@ -17,10 +17,10 @@ const chance = new Chance()
 export default function BlogPostsPage() {
   const { user } = useAuth()
   const router = useRouter()
-  const [posts, setPosts] = useState([])
+  const [posts, setPosts] = useState<Post[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isCreatingDraft, setIsCreatingDraft] = useState(false)
-  const [error, setError] = useState(null)
+  const [error, setError] = useState<Error | null>(null)
   const [errorMessage, setErrorMessage] = useState("")
 
   const fetchPosts = async () => {
@@ -33,7 +33,7 @@ export default function BlogPostsPage() {
       setPosts(allPosts)
     } catch (err) {
       console.error("Error fetching posts:", err)
-      setError(err)
+      setError(err instanceof Error ? err : new Error(String(err)))
       setErrorMessage(err instanceof Error ? err.message : "Failed to load posts. Please try again.")
     } finally {
       setIsLoading(false)
@@ -76,6 +76,7 @@ export default function BlogPostsPage() {
         summary: "",
         cover_image: null,
         is_published: false,
+        published_at: null,
         enable_comments: true,
       }
 
@@ -83,7 +84,7 @@ export default function BlogPostsPage() {
       router.push(`/admin/blog/edit/${newPost.id}?isNew=true`)
     } catch (error) {
       console.error("Error creating draft post:", error)
-      setError(error)
+      setError(error instanceof Error ? error : new Error(String(error)))
       setErrorMessage(error instanceof Error ? error.message : "Failed to create new post. Please try again.")
     } finally {
       setIsCreatingDraft(false)

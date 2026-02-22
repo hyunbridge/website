@@ -8,7 +8,7 @@ import Link from "next/link"
 
 export async function generateMetadata({ params }: { params: { id: string } }) {
   try {
-    const { tag } = await getPostsByTagId(params.id, true, 1, 1)
+    const { tag } = await getPostsByTagId(params.id, 1, 1, true)
 
     return {
       title: `${tag.name} | Blog Tags | Hyungyo Seo`,
@@ -24,7 +24,7 @@ export async function generateMetadata({ params }: { params: { id: string } }) {
 
 export default async function TagPostsPage({ params }: { params: { id: string } }) {
   try {
-    const { tag, posts } = await getPostsByTagId(params.id, true, 1, 10)
+    const { tag, posts } = await getPostsByTagId(params.id, 1, 10, true)
 
     return (
       <div className="container py-8 md:py-12">

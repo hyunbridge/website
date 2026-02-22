@@ -6,8 +6,9 @@ import { useCreateBlockNote } from "@blocknote/react"
 import { BlockNoteView } from "@blocknote/mantine"
 import "@blocknote/core/fonts/inter.css"
 import "@blocknote/mantine/style.css"
-import { supabase } from "@/lib/supabase"
 import { useTheme } from "next-themes"
+import { savePostDraftContent } from "@/lib/blog-service"
+import { uploadToS3 } from "@/lib/s3-service"
 
 type Props = {
     initialContent?: Block[]
@@ -94,35 +95,7 @@ export default function BlockNoteInnerEditor({
         async (file: File) => {
             if (!postId) return ""
             try {
-                const { data: { session } } = await supabase.auth.getSession()
-                if (!session?.access_token) throw new Error("Not authenticated")
-
-                const { data: imageData, error: insertError } = await supabase
-                    .from("post_images")
-                    .insert({ post_id: postId, url: "" })
-                    .select("id")
-                    .single()
-                if (insertError || !imageData) throw new Error("Failed to create image record")
-
-                const imageId = imageData.id
-                const ext = file.name.split(".").pop() || ""
-                const fileName = `blog/${postId}/${imageId}${ext ? `.${ext}` : ""}`
-                const contentType = file.type
-
-                const presignedRes = await fetch("/api/s3/presigned-url", {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        Authorization: `Bearer ${session.access_token}`,
-                    },
-                    body: JSON.stringify({ key: fileName, contentType }),
-                })
-                if (!presignedRes.ok) throw new Error("Failed to get presigned URL")
-                const { url, fileUrl } = await presignedRes.json()
-
-                await fetch(url, { method: "PUT", headers: { "Content-Type": contentType }, body: file })
-                await supabase.from("post_images").update({ url: fileUrl }).eq("id", imageId)
-                return fileUrl
+                return await uploadToS3(file, postId)
             } catch (error) {
                 console.error("Image upload failed:", error)
                 return ""
@@ -152,15 +125,7 @@ export default function BlockNoteInnerEditor({
                 try {
                     const contentJson = JSON.stringify(blocks)
 
-                    const { error } = await supabase
-                        .from("posts")
-                        .update({
-                            content: contentJson,
-                            updated_at: new Date().toISOString(),
-                        })
-                        .eq("id", postId)
-
-                    if (error) throw error
+                    await savePostDraftContent(postId, contentJson)
                     if (isMountedRef.current) onSaveStatusChange?.("saved")
                     onAutosaveCommitted?.()
                 } catch (err) {

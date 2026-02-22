@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { use, useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/contexts/auth-context"
 import { getPostById } from "@/lib/blog-service"
@@ -8,7 +8,8 @@ import { SeamlessPostView } from "@/components/blog/seamless-post-view"
 import type { Post } from "@/lib/blog-service"
 import { Skeleton } from "@/components/ui/skeleton"
 
-export default function EditPostPage({ params }: { params: { id: string } }) {
+export default function EditPostPage({ params }: { params: Promise<{ id: string }> }) {
+  const resolvedParams = use(params)
   const router = useRouter()
   const { user, isLoading: authLoading } = useAuth()
   const [post, setPost] = useState<Post | null>(null)
@@ -25,7 +26,7 @@ export default function EditPostPage({ params }: { params: { id: string } }) {
 
     async function fetchPost() {
       try {
-        const data = await getPostById(params.id)
+        const data = await getPostById(resolvedParams.id)
         if (data.author_id !== user!.id) {
           setError("You don't have permission to edit this post.")
           return
@@ -38,7 +39,7 @@ export default function EditPostPage({ params }: { params: { id: string } }) {
       }
     }
     fetchPost()
-  }, [params.id, user, authLoading, router])
+  }, [resolvedParams.id, user, authLoading, router])
 
   if (error) {
     return <div className="p-8 text-destructive">{error}</div>

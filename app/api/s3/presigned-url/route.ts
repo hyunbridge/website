@@ -1,27 +1,12 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import { getServerSupabase, getAuthenticatedSupabase } from "@/lib/supabase";
+import { requireAuthenticatedSupabase } from "@/lib/api-auth";
 
 export async function POST(request: NextRequest) {
   try {
-    // Extract token from Authorization header
-    const authHeader = request.headers.get('Authorization');
-    
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return NextResponse.json({ error: "Missing or invalid Authorization header" }, { status: 401 });
-    }
-
-    const token = authHeader.replace('Bearer ', '');
-    const supabase = getAuthenticatedSupabase(token);
-    
-    // Verify session using token
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    
-    if (authError || !user) {
-      console.error("Authentication error:", authError);
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const auth = await requireAuthenticatedSupabase(request)
+    if (auth.errorResponse) return auth.errorResponse
 
     const { key, contentType } = await request.json();
 
