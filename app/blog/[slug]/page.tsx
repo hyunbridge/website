@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation"
 import { getPostBySlug, getPublishedVersionSnapshot } from "@/lib/blog-service"
-import { SeamlessPostView } from "@/components/blog/seamless-post-view"
+import { PublicPostView } from "@/components/blog/public-post-view"
 import type { Metadata } from "next"
 
 type Props = {
@@ -54,5 +54,14 @@ export default async function BlogPostPage({ params }: Props) {
     notFound()
   }
 
-  return <SeamlessPostView post={post} mode="view" />
+  let publishedSnapshot = null
+  if (post.is_published && post.published_version_id) {
+    try {
+      publishedSnapshot = await getPublishedVersionSnapshot(post.published_version_id)
+    } catch {
+      publishedSnapshot = null
+    }
+  }
+
+  return <PublicPostView post={post} publishedSnapshot={publishedSnapshot} />
 }

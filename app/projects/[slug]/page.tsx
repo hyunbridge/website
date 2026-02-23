@@ -1,7 +1,7 @@
 import { Suspense } from "react"
 import { notFound } from "next/navigation"
-import { getProjectBySlug } from "@/lib/project-service"
-import { ProjectDetail } from "../project-detail"
+import { getProjectBySlug, getProjectPublishedVersion } from "@/lib/project-service"
+import { PublicProjectView } from "@/components/project/public-project-view"
 import { ErrorBoundary } from "@/components/error-boundary"
 import { ErrorMessage } from "@/components/error-message"
 
@@ -64,7 +64,16 @@ async function ProjectDetailWrapper({ slug }: { slug: string }) {
       notFound()
     }
 
-    return <ProjectDetail project={project} />
+    let publishedSnapshot = null
+    if (project.is_published && project.published_version_id) {
+      try {
+        publishedSnapshot = await getProjectPublishedVersion(project.published_version_id)
+      } catch {
+        publishedSnapshot = null
+      }
+    }
+
+    return <PublicProjectView project={project} publishedSnapshot={publishedSnapshot} />
   } catch (error) {
     return (
       <ErrorMessage
