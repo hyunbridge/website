@@ -1041,7 +1041,11 @@ function toS3Key(url: string): string | null {
                 // Ignore fallback
             }
         }
-        const key = parsed.pathname.replace(/^\//, "") || null
+        let key = parsed.pathname.replace(/^\//, "") || null
+        const configuredBucket = process.env.S3_BUCKET || process.env.NEXT_PUBLIC_S3_BUCKET
+        if (key && configuredBucket && key.startsWith(`${configuredBucket}/`)) {
+            key = key.slice(configuredBucket.length + 1)
+        }
         if (!key) return null
         if (!/^(assets|avatars)\//.test(key)) return null
         return key
