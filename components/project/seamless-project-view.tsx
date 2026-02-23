@@ -47,6 +47,8 @@ import {
 import { createTag, getAllTags } from "@/lib/blog-service"
 import Link from "next/link"
 import { format } from "date-fns"
+import { motion } from "framer-motion"
+import { MORPH_LAYOUT_TRANSITION } from "@/lib/motion"
 import { VersionHistory } from "./version-history"
 import { textSimilarity, blocksToText, SIMILARITY_THRESHOLD } from "./blocknote-inner"
 import { Label } from "@/components/ui/label"
@@ -548,7 +550,11 @@ export function SeamlessProjectView({ project: initialProject, mode = "view" }: 
     }
 
     return (
-        <div className="container max-w-4xl mx-auto py-8 md:py-12">
+        <motion.div
+            layoutId={mode === "view" ? `project-card-${project.id}` : undefined}
+            transition={MORPH_LAYOUT_TRANSITION}
+            className="container max-w-4xl mx-auto py-8 md:py-12"
+        >
             {/* Back link */}
             <div className="mb-6">
                 <Link
@@ -742,13 +748,17 @@ export function SeamlessProjectView({ project: initialProject, mode = "view" }: 
 
             {/* Cover image */}
             {project.cover_image && (
-                <div className="mb-8 rounded-2xl overflow-hidden">
+                <motion.div
+                    layoutId={`project-image-${project.id}`}
+                    transition={MORPH_LAYOUT_TRANSITION}
+                    className="mb-8 rounded-2xl overflow-hidden"
+                >
                     <img
                         src={project.cover_image}
                         alt={title}
                         className="w-full h-64 md:h-80 object-cover"
                     />
-                </div>
+                </motion.div>
             )}
 
             {/* Title — editable for author, static for viewers */}
@@ -761,7 +771,9 @@ export function SeamlessProjectView({ project: initialProject, mode = "view" }: 
                     placeholder="Project title…"
                 />
             ) : (
-                <h1 className="text-3xl md:text-5xl font-bold mb-4">{displayTitle}</h1>
+                <motion.div layoutId={`project-title-${project.id}`} transition={MORPH_LAYOUT_TRANSITION}>
+                    <h1 className="text-3xl md:text-5xl font-bold mb-4">{displayTitle}</h1>
+                </motion.div>
             )}
 
             {/* Author & meta info */}
@@ -944,6 +956,6 @@ export function SeamlessProjectView({ project: initialProject, mode = "view" }: 
                 </DialogContent>
             </Dialog>
 
-        </div>
+        </motion.div>
     )
 }

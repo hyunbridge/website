@@ -45,6 +45,8 @@ import {
 } from "@/lib/blog-service"
 import Link from "next/link"
 import { format } from "date-fns"
+import { motion } from "framer-motion"
+import { MORPH_LAYOUT_TRANSITION } from "@/lib/motion"
 import { VersionHistory } from "./version-history"
 import { textSimilarity, blocksToText, SIMILARITY_THRESHOLD } from "./blocknote-inner"
 import {
@@ -454,7 +456,11 @@ export function SeamlessPostView({ post: initialPost, mode = "view" }: Props) {
     }
 
     return (
-        <div className="container max-w-4xl mx-auto py-8 md:py-12">
+        <motion.div
+            layoutId={mode === "view" ? `blog-card-${post.id}` : undefined}
+            transition={MORPH_LAYOUT_TRANSITION}
+            className="container max-w-4xl mx-auto py-8 md:py-12"
+        >
             {/* Back link */}
             <div className="mb-6">
                 <Link
@@ -643,13 +649,17 @@ export function SeamlessPostView({ post: initialPost, mode = "view" }: Props) {
 
             {/* Cover image */}
             {post.cover_image && (
-                <div className="mb-8 rounded-2xl overflow-hidden">
+                <motion.div
+                    layoutId={`blog-image-${post.id}`}
+                    transition={MORPH_LAYOUT_TRANSITION}
+                    className="mb-8 rounded-2xl overflow-hidden"
+                >
                     <img
                         src={post.cover_image}
                         alt={title}
                         className="w-full h-64 md:h-80 object-cover"
                     />
-                </div>
+                </motion.div>
             )}
 
             {/* Title — editable for author, static for viewers */}
@@ -662,7 +672,9 @@ export function SeamlessPostView({ post: initialPost, mode = "view" }: Props) {
                     placeholder="Post title…"
                 />
             ) : (
-                <h1 className="text-3xl md:text-5xl font-bold mb-4">{displayTitle}</h1>
+                <motion.div layoutId={`blog-title-${post.id}`} transition={MORPH_LAYOUT_TRANSITION}>
+                    <h1 className="text-3xl md:text-5xl font-bold mb-4">{displayTitle}</h1>
+                </motion.div>
             )}
 
             {/* Author & meta info */}
@@ -711,7 +723,7 @@ export function SeamlessPostView({ post: initialPost, mode = "view" }: Props) {
                         if (!isEditable || isSavingVersion) return
                         if (autoVersionSaveTimer.current) clearTimeout(autoVersionSaveTimer.current)
                         autoVersionSaveTimer.current = setTimeout(() => {
-                            smartSaveVersion("Auto save").catch(() => {})
+                            smartSaveVersion("Auto save").catch(() => { })
                         }, 1500)
                     }}
                     onChange={(blocks) => {
@@ -724,6 +736,6 @@ export function SeamlessPostView({ post: initialPost, mode = "view" }: Props) {
 
             {/* Comments */}
             {post.enable_comments && !isEditable && <Comments postId={post.id} />}
-        </div>
+        </motion.div>
     )
 }

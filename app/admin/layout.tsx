@@ -10,6 +10,7 @@ import { LayoutDashboard, FileText, FolderKanban, Tags, LogOut, User, ChevronLef
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
+import { motion, AnimatePresence } from "framer-motion"
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const { user, isLoading: authLoading, signOut } = useAuth()
@@ -91,7 +92,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     return null // Will redirect in useEffect
   }
 
-  const navItems = [
+  type NavItemType = {
+    name: string
+    href: string
+    icon: any
+    subItems?: { name: string; href: string }[]
+  }
+
+  const navItems: NavItemType[] = [
     {
       name: "Dashboard",
       href: "/admin",
@@ -216,7 +224,18 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
       {/* Main content */}
       <main className={cn("flex-1 overflow-auto transition-all duration-300", collapsed ? "ml-16" : "ml-64")}>
-        <div className="container py-8">{children}</div>
+        <AnimatePresence mode="popLayout" initial={false}>
+          <motion.div
+            key={pathname}
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 15 }}
+            transition={{ type: "spring", stiffness: 300, damping: 25, duration: 0.2 }}
+            className="container py-8"
+          >
+            {children}
+          </motion.div>
+        </AnimatePresence>
       </main>
     </div>
   )

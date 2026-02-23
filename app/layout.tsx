@@ -2,6 +2,7 @@ import type React from "react"
 import { MainNav } from "@/components/main-nav"
 import { ThemeProvider } from "@/components/theme-provider"
 import { NavigationEvents } from "@/components/navigation-events"
+import { RouteTransitionProvider } from "@/components/route-transition-provider"
 import { AuthProvider } from "@/contexts/auth-context"
 
 import "./globals.css"
@@ -30,7 +31,9 @@ export default function RootLayout({
         <AuthProvider>
           <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
             <MainNav />
-            <main className="pt-16">{children}</main>
+            <main className="pt-16">
+              <RouteTransitionProvider>{children}</RouteTransitionProvider>
+            </main>
             <NavigationEvents />
           </ThemeProvider>
         </AuthProvider>

@@ -7,6 +7,7 @@ import { AlertTriangle } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
 import type { Project } from "@/lib/project-service"
+import { MORPH_LAYOUT_TRANSITION } from "@/lib/motion"
 
 export function ProjectList({ projects }: { projects: Project[] }) {
   if (!projects || projects.length === 0) {
@@ -26,16 +27,21 @@ export function ProjectList({ projects }: { projects: Project[] }) {
       {projects.map((project, index) => (
         <motion.div
           key={project.id}
+          layoutId={`project-card-${project.id}`}
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: index * 0.1, duration: 0.5 }}
+          transition={{ delay: index * 0.1, duration: 0.5, ...MORPH_LAYOUT_TRANSITION }}
           whileHover={{ y: -5, transition: { duration: 0.2 } }}
           whileTap={{ scale: 0.98 }}
         >
           <Link href={`/projects/${project.slug || project.id}`} className="block h-full">
             <Card className="h-full hover:shadow-md transition-shadow overflow-hidden flex flex-col border border-border">
               {project.cover_image && (
-                <div className="relative h-48 w-full overflow-hidden">
+                <motion.div
+                  layoutId={`project-image-${project.id}`}
+                  transition={MORPH_LAYOUT_TRANSITION}
+                  className="relative h-48 w-full overflow-hidden"
+                >
                   <Image
                     src={project.cover_image}
                     alt={project.title}
@@ -43,10 +49,12 @@ export function ProjectList({ projects }: { projects: Project[] }) {
                     className="object-cover"
                     unoptimized
                   />
-                </div>
+                </motion.div>
               )}
               <CardHeader>
-                <CardTitle>{project.title}</CardTitle>
+                <motion.div layoutId={`project-title-${project.id}`} transition={MORPH_LAYOUT_TRANSITION}>
+                  <CardTitle>{project.title}</CardTitle>
+                </motion.div>
               </CardHeader>
               <CardContent className="flex-grow">
                 <p className="text-sm text-muted-foreground line-clamp-3">{project.summary}</p>
