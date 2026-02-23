@@ -23,7 +23,6 @@ import {
     ChevronDown,
     Trash2,
     Settings,
-    Link as LinkIcon,
     MessageSquare,
 } from "lucide-react"
 import {
@@ -1057,7 +1056,7 @@ export function SeamlessProjectView({ project: initialProject, mode = "view" }: 
                                         className="h-8 text-sm"
                                     />
                                     <Button type="button" variant="outline" size="sm" onClick={handleAddProjectLink} className="h-8">
-                                        <LinkIcon className="h-3.5 w-3.5" />
+                                        <Plus className="h-3.5 w-3.5" />
                                     </Button>
                                 </div>
                             </div>
