@@ -4,8 +4,7 @@ import { useState, useEffect } from "react"
 import { useInView } from "react-intersection-observer"
 import { type Post, getPosts } from "@/lib/blog-service"
 import { PostCard } from "./post-card"
-import { Skeleton } from "@/components/ui/skeleton"
-import { Card } from "@/components/ui/card"
+import { BlogCardSkeleton } from "@/components/loading/blog-card-skeleton"
 
 interface PostListProps {
   initialPosts: Post[]
@@ -65,8 +64,8 @@ export function PostList({ initialPosts, isAdmin = false }: PostListProps) {
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 gap-6">
-        {posts.map((post) => (
-          <PostCard key={post.id} post={post} isAdmin={isAdmin} />
+        {posts.map((post, index) => (
+          <PostCard key={post.id} post={post} isAdmin={isAdmin} index={index} />
         ))}
       </div>
 
@@ -80,26 +79,5 @@ export function PostList({ initialPosts, isAdmin = false }: PostListProps) {
 }
 
 function LoadingSkeleton() {
-  return (
-    <Card className="w-full">
-      <div className="h-48 w-full">
-        <Skeleton className="h-full w-full" />
-      </div>
-      <div className="p-4 space-y-4">
-        <Skeleton className="h-6 w-3/4" />
-        <div className="space-y-2">
-          <Skeleton className="h-4 w-full" />
-          <Skeleton className="h-4 w-full" />
-          <Skeleton className="h-4 w-2/3" />
-        </div>
-        <div className="flex justify-between">
-          <div className="flex gap-2">
-            <Skeleton className="h-5 w-16 rounded-full" />
-            <Skeleton className="h-5 w-16 rounded-full" />
-          </div>
-          <Skeleton className="h-4 w-24" />
-        </div>
-      </div>
-    </Card>
-  )
+  return <BlogCardSkeleton />
 }

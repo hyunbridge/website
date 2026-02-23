@@ -1,13 +1,14 @@
 "use client"
 
 import { useState, useEffect, useCallback, useRef, useMemo } from "react"
-import { useRouter } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { useAuth } from "@/contexts/auth-context"
 import { BlockNoteEditor } from "./blocknote-editor"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
+import { Skeleton } from "@/components/ui/skeleton"
 import {
     Check,
     Loader2,
@@ -72,6 +73,7 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { getPresignedUrl } from "@/lib/s3-service"
+import { useNavigationIntent } from "@/components/navigation-intent-provider"
 
 type SaveStatus = "idle" | "saving" | "saved" | "error"
 
@@ -82,6 +84,8 @@ type Props = {
 
 export function SeamlessProjectView({ project: initialProject, mode = "view" }: Props) {
     const router = useRouter()
+    const pathname = usePathname()
+    const { getRecentIntent } = useNavigationIntent()
     const { user } = useAuth()
     const [project, setProject] = useState(initialProject)
     const [saveStatus, setSaveStatus] = useState<SaveStatus>(mode === "edit" ? "saved" : "idle")
@@ -116,6 +120,7 @@ export function SeamlessProjectView({ project: initialProject, mode = "view" }: 
     // Published version data (fetched for readers)
     const [publishedVersion, setPublishedVersion] = useState<{ title: string; content: string; summary?: string | null } | null>(null)
     const [publishedVersionLoading, setPublishedVersionLoading] = useState(mode === "view")
+    const [deferSecondaryReveal, setDeferSecondaryReveal] = useState(false)
 
     // Fetch published version content for readers and draft-vs-published comparison in edit mode
     useEffect(() => {
@@ -149,6 +154,20 @@ export function SeamlessProjectView({ project: initialProject, mode = "view" }: 
             if (autoVersionSaveTimer.current) clearTimeout(autoVersionSaveTimer.current)
         }
     }, [])
+
+    useEffect(() => {
+        if (mode !== "view") return
+        const intent = getRecentIntent()
+        const isMorphArrival = !!intent && intent.kind === "projects-detail" && intent.href === pathname
+        if (!isMorphArrival) {
+            setDeferSecondaryReveal(false)
+            return
+        }
+
+        setDeferSecondaryReveal(true)
+        const timer = window.setTimeout(() => setDeferSecondaryReveal(false), 220)
+        return () => window.clearTimeout(timer)
+    }, [mode, pathname, getRecentIntent])
 
     const buildSafeSlug = useCallback(
         (rawTitle: string) => {
@@ -457,6 +476,18 @@ export function SeamlessProjectView({ project: initialProject, mode = "view" }: 
         [settingsLinksDraft],
     )
 
+    const secondaryRevealMotion = deferSecondaryReveal
+        ? {
+            initial: { opacity: 0 },
+            animate: { opacity: 1 },
+            transition: { duration: 0.16, delay: 0.1 },
+        }
+        : {
+            initial: false as const,
+            animate: { opacity: 1 },
+            transition: { duration: 0.12 },
+        }
+
     const handleAddProjectLink = () => {
         const label = newLinkLabel.trim()
         const url = newLinkUrl.trim()
@@ -520,17 +551,115 @@ export function SeamlessProjectView({ project: initialProject, mode = "view" }: 
     if (!isEditable) {
         if (publishedVersionLoading) {
             return (
-                <div className="container max-w-4xl mx-auto py-8 md:py-12">
-                    <div className="animate-pulse space-y-4">
-                        <div className="h-8 bg-muted rounded w-3/4" />
-                        <div className="h-4 bg-muted rounded w-1/4" />
-                        <div className="space-y-2 mt-8">
-                            <div className="h-4 bg-muted rounded w-full" />
-                            <div className="h-4 bg-muted rounded w-5/6" />
-                            <div className="h-4 bg-muted rounded w-4/6" />
+                <motion.div transition={MORPH_LAYOUT_TRANSITION} className="container max-w-4xl mx-auto py-8 md:py-12">
+                    <div className="mb-6">
+                        <Link href="/projects" className="text-sm text-muted-foreground hover:underline">
+                            ← Back to all projects
+                        </Link>
+                    </div>
+
+                    {project.cover_image && (
+                        <motion.div
+                            layoutId={`project-image-${project.id}`}
+                            transition={MORPH_LAYOUT_TRANSITION}
+                            className="mb-8 rounded-2xl overflow-hidden relative"
+                        >
+                            <img
+                                src={project.cover_image}
+                                alt={displayTitle}
+                                className="w-full h-64 md:h-80 object-cover"
+                            />
+                            <div className="absolute inset-0 bg-background/15" />
+                        </motion.div>
+                    )}
+
+                    <motion.div layoutId={`project-title-${project.id}`} transition={MORPH_LAYOUT_TRANSITION}>
+                        <h1 className="text-3xl md:text-5xl font-bold mb-4">{displayTitle}</h1>
+                    </motion.div>
+
+                    <div className="flex flex-wrap items-center gap-4 mb-8">
+                        <div className="flex items-center gap-2">
+                            {project.owner?.avatar_url ? (
+                                <img
+                                    src={project.owner.avatar_url}
+                                    alt={authorName}
+                                    className="w-8 h-8 rounded-full"
+                                />
+                            ) : (
+                                <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-sm font-medium">
+                                    {authorName[0]?.toUpperCase()}
+                                </div>
+                            )}
+                            <span className="text-sm">{authorName}</span>
+                        </div>
+
+                        <span className="text-sm text-muted-foreground">{formattedDate}</span>
+
+                        {projectTags.length > 0 && (
+                            <div className="flex flex-wrap gap-2">
+                                {projectTags.map((tag) => (
+                                    <Badge key={tag.id} variant="secondary">
+                                        {tag.name}
+                                    </Badge>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="space-y-4">
+                        <Skeleton className="h-5 w-40" />
+                        <div className="space-y-3">
+                            <Skeleton className="h-4 w-full" />
+                            <Skeleton className="h-4 w-11/12" />
+                            <Skeleton className="h-4 w-10/12" />
+                            <Skeleton className="h-4 w-full" />
+                        </div>
+                        <Skeleton className="h-36 w-full rounded-xl" />
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <Skeleton className="h-28 w-full rounded-xl" />
+                            <Skeleton className="h-28 w-full rounded-xl" />
                         </div>
                     </div>
-                </div>
+
+                    {projectLinks.length > 0 && (
+                        <div className="mt-8 pt-6 border-t">
+                            <h3 className="font-medium mb-3">Links</h3>
+                            <div className="flex flex-wrap gap-2">
+                                {projectLinks.map((link, index) => (
+                                    <Button
+                                        key={link.id || `${link.url}-${index}`}
+                                        variant="outline"
+                                        size="sm"
+                                        asChild
+                                    >
+                                        <a href={link.url} target="_blank" rel="noopener noreferrer">
+                                            {link.label || link.url}
+                                        </a>
+                                    </Button>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    <div className="mt-12">
+                        <Card className="bg-card/50 border border-border/50">
+                            <CardHeader>
+                                <CardTitle className="text-xl">Have a question about {displayTitle}?</CardTitle>
+                                <CardDescription>
+                                    Reach out if you want more details about the project.
+                                </CardDescription>
+                            </CardHeader>
+                            <CardFooter>
+                                <Button asChild>
+                                    <Link href="/contact" className="flex items-center gap-2">
+                                        <MessageSquare className="h-4 w-4" />
+                                        Get in touch
+                                    </Link>
+                                </Button>
+                            </CardFooter>
+                        </Card>
+                    </div>
+                </motion.div>
             )
         }
 
@@ -550,11 +679,7 @@ export function SeamlessProjectView({ project: initialProject, mode = "view" }: 
     }
 
     return (
-        <motion.div
-            layoutId={mode === "view" ? `project-card-${project.id}` : undefined}
-            transition={MORPH_LAYOUT_TRANSITION}
-            className="container max-w-4xl mx-auto py-8 md:py-12"
-        >
+        <motion.div transition={MORPH_LAYOUT_TRANSITION} className="container max-w-4xl mx-auto py-8 md:py-12">
             {/* Back link */}
             <div className="mb-6">
                 <Link
@@ -777,7 +902,7 @@ export function SeamlessProjectView({ project: initialProject, mode = "view" }: 
             )}
 
             {/* Author & meta info */}
-            <div className="flex flex-wrap items-center gap-4 mb-8">
+            <motion.div className="flex flex-wrap items-center gap-4 mb-8" {...secondaryRevealMotion}>
                 <div className="flex items-center gap-2">
                     {project.owner?.avatar_url ? (
                         <img
@@ -808,10 +933,10 @@ export function SeamlessProjectView({ project: initialProject, mode = "view" }: 
                         ))}
                     </div>
                 )}
-            </div>
+            </motion.div>
 
             {/* BlockNote editor/viewer */}
-            <div className="blocknote-seamless">
+            <motion.div className="blocknote-seamless" {...secondaryRevealMotion}>
                 <BlockNoteEditor
                     initialContent={initialBlocks}
                     editable={isEditable}
@@ -830,10 +955,10 @@ export function SeamlessProjectView({ project: initialProject, mode = "view" }: 
                         setDraftContentForCompare(serialized)
                     }}
                 />
-            </div>
+            </motion.div>
 
             {projectLinks.length > 0 && (
-                <div className="mt-8 pt-6 border-t">
+                <motion.div className="mt-8 pt-6 border-t" {...secondaryRevealMotion}>
                     <h3 className="font-medium mb-3">Links</h3>
                     <div className="flex flex-wrap gap-2">
                         {projectLinks.map((link, index) => (
@@ -849,11 +974,11 @@ export function SeamlessProjectView({ project: initialProject, mode = "view" }: 
                             </Button>
                         ))}
                     </div>
-                </div>
+                </motion.div>
             )}
 
             {!isEditable && (
-                <div className="mt-12">
+                <motion.div className="mt-12" {...secondaryRevealMotion}>
                     <Card className="bg-card/50 border border-border/50">
                         <CardHeader>
                             <CardTitle className="text-xl">Have a question about {displayTitle}?</CardTitle>
@@ -870,7 +995,7 @@ export function SeamlessProjectView({ project: initialProject, mode = "view" }: 
                             </Button>
                         </CardFooter>
                     </Card>
-                </div>
+                </motion.div>
             )}
 
             <Dialog open={showSettingsModal} onOpenChange={setShowSettingsModal}>

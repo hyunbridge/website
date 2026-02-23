@@ -1,13 +1,14 @@
 "use client"
 
 import { useState, useEffect, useCallback, useRef, useMemo } from "react"
-import { useRouter } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { useAuth } from "@/contexts/auth-context"
 import { BlockNoteEditor } from "./blocknote-editor"
 import { Comments } from "./comments"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Skeleton } from "@/components/ui/skeleton"
 import {
     Check,
     Loader2,
@@ -61,6 +62,7 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { getPresignedUrl } from "@/lib/s3-service"
+import { useNavigationIntent } from "@/components/navigation-intent-provider"
 
 type SaveStatus = "idle" | "saving" | "saved" | "error"
 
@@ -71,6 +73,8 @@ type Props = {
 
 export function SeamlessPostView({ post: initialPost, mode = "view" }: Props) {
     const router = useRouter()
+    const pathname = usePathname()
+    const { getRecentIntent } = useNavigationIntent()
     const { user } = useAuth()
     const [post, setPost] = useState(initialPost)
     const [saveStatus, setSaveStatus] = useState<SaveStatus>(mode === "edit" ? "saved" : "idle")
@@ -94,6 +98,7 @@ export function SeamlessPostView({ post: initialPost, mode = "view" }: Props) {
     // Published version data (fetched for readers)
     const [publishedVersion, setPublishedVersion] = useState<{ title: string; content: string; summary?: string | null } | null>(null)
     const [publishedVersionLoading, setPublishedVersionLoading] = useState(mode === "view")
+    const [deferSecondaryReveal, setDeferSecondaryReveal] = useState(false)
 
     // Fetch published version content for readers and draft-vs-published comparison in edit mode
     useEffect(() => {
@@ -127,6 +132,20 @@ export function SeamlessPostView({ post: initialPost, mode = "view" }: Props) {
             if (autoVersionSaveTimer.current) clearTimeout(autoVersionSaveTimer.current)
         }
     }, [])
+
+    useEffect(() => {
+        if (mode !== "view") return
+        const intent = getRecentIntent()
+        const isMorphArrival = !!intent && intent.kind === "blog-detail" && intent.href === pathname
+        if (!isMorphArrival) {
+            setDeferSecondaryReveal(false)
+            return
+        }
+
+        setDeferSecondaryReveal(true)
+        const timer = window.setTimeout(() => setDeferSecondaryReveal(false), 220)
+        return () => window.clearTimeout(timer)
+    }, [mode, pathname, getRecentIntent])
 
     const buildSafeSlug = useCallback(
         (rawTitle: string) => {
@@ -422,21 +441,101 @@ export function SeamlessPostView({ post: initialPost, mode = "view" }: Props) {
         (t) => !postTags.find((pt) => pt.id === t.id),
     )
 
+    const secondaryRevealMotion = deferSecondaryReveal
+        ? {
+            initial: { opacity: 0 },
+            animate: { opacity: 1 },
+            transition: { duration: 0.16, delay: 0.1 },
+        }
+        : {
+            initial: false as const,
+            animate: { opacity: 1 },
+            transition: { duration: 0.12 },
+        }
+
     // Non-author readers: show loading state or "not published" message
     if (!isEditable) {
         if (publishedVersionLoading) {
             return (
-                <div className="container max-w-4xl mx-auto py-8 md:py-12">
-                    <div className="animate-pulse space-y-4">
-                        <div className="h-8 bg-muted rounded w-3/4" />
-                        <div className="h-4 bg-muted rounded w-1/4" />
-                        <div className="space-y-2 mt-8">
-                            <div className="h-4 bg-muted rounded w-full" />
-                            <div className="h-4 bg-muted rounded w-5/6" />
-                            <div className="h-4 bg-muted rounded w-4/6" />
+                <motion.div transition={MORPH_LAYOUT_TRANSITION} className="container max-w-4xl mx-auto py-8 md:py-12">
+                    <div className="mb-6">
+                        <Link href="/blog" className="text-sm text-muted-foreground hover:underline">
+                            ← Back to all posts
+                        </Link>
+                    </div>
+
+                    {post.cover_image && (
+                        <motion.div
+                            layoutId={`blog-image-${post.id}`}
+                            transition={MORPH_LAYOUT_TRANSITION}
+                            className="mb-8 rounded-2xl overflow-hidden relative"
+                        >
+                            <img
+                                src={post.cover_image}
+                                alt={displayTitle}
+                                className="w-full h-64 md:h-80 object-cover"
+                            />
+                            <div className="absolute inset-0 bg-background/15" />
+                        </motion.div>
+                    )}
+
+                    <motion.div layoutId={`blog-title-${post.id}`} transition={MORPH_LAYOUT_TRANSITION}>
+                        <h1 className="text-3xl md:text-5xl font-bold mb-4">{displayTitle}</h1>
+                    </motion.div>
+
+                    <div className="flex flex-wrap items-center gap-4 mb-8">
+                        <div className="flex items-center gap-2">
+                            {post.author?.avatar_url ? (
+                                <img
+                                    src={post.author.avatar_url}
+                                    alt={authorName}
+                                    className="w-8 h-8 rounded-full"
+                                />
+                            ) : (
+                                <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-sm font-medium">
+                                    {authorName[0]?.toUpperCase()}
+                                </div>
+                            )}
+                            <span className="text-sm">{authorName}</span>
+                        </div>
+
+                        <span className="text-sm text-muted-foreground">{formattedDate}</span>
+
+                        {postTags.length > 0 && (
+                            <div className="flex flex-wrap gap-2">
+                                {postTags.map((tag) => (
+                                    <Badge key={tag.id} variant="secondary">
+                                        {tag.name}
+                                    </Badge>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="space-y-4">
+                        <Skeleton className="h-5 w-40" />
+                        <div className="space-y-3">
+                            <Skeleton className="h-4 w-full" />
+                            <Skeleton className="h-4 w-11/12" />
+                            <Skeleton className="h-4 w-10/12" />
+                            <Skeleton className="h-4 w-full" />
+                        </div>
+                        <Skeleton className="h-36 w-full rounded-xl" />
+                        <div className="space-y-3">
+                            <Skeleton className="h-4 w-full" />
+                            <Skeleton className="h-4 w-4/5" />
+                            <Skeleton className="h-4 w-5/6" />
                         </div>
                     </div>
-                </div>
+
+                    {post.enable_comments && (
+                        <div className="mt-10 space-y-3">
+                            <Skeleton className="h-6 w-32" />
+                            <Skeleton className="h-24 w-full rounded-xl" />
+                            <Skeleton className="h-20 w-full rounded-xl" />
+                        </div>
+                    )}
+                </motion.div>
             )
         }
 
@@ -456,11 +555,7 @@ export function SeamlessPostView({ post: initialPost, mode = "view" }: Props) {
     }
 
     return (
-        <motion.div
-            layoutId={mode === "view" ? `blog-card-${post.id}` : undefined}
-            transition={MORPH_LAYOUT_TRANSITION}
-            className="container max-w-4xl mx-auto py-8 md:py-12"
-        >
+        <motion.div transition={MORPH_LAYOUT_TRANSITION} className="container max-w-4xl mx-auto py-8 md:py-12">
             {/* Back link */}
             <div className="mb-6">
                 <Link
@@ -678,7 +773,7 @@ export function SeamlessPostView({ post: initialPost, mode = "view" }: Props) {
             )}
 
             {/* Author & meta info */}
-            <div className="flex flex-wrap items-center gap-4 mb-8">
+            <motion.div className="flex flex-wrap items-center gap-4 mb-8" {...secondaryRevealMotion}>
                 <div className="flex items-center gap-2">
                     {post.author?.avatar_url ? (
                         <img
@@ -710,10 +805,10 @@ export function SeamlessPostView({ post: initialPost, mode = "view" }: Props) {
                         ))}
                     </div>
                 )}
-            </div>
+            </motion.div>
 
             {/* BlockNote editor/viewer */}
-            <div className="blocknote-seamless">
+            <motion.div className="blocknote-seamless" {...secondaryRevealMotion}>
                 <BlockNoteEditor
                     initialContent={initialBlocks}
                     editable={isEditable}
@@ -732,10 +827,14 @@ export function SeamlessPostView({ post: initialPost, mode = "view" }: Props) {
                         setDraftContentForCompare(serialized)
                     }}
                 />
-            </div>
+            </motion.div>
 
             {/* Comments */}
-            {post.enable_comments && !isEditable && <Comments postId={post.id} />}
+            {post.enable_comments && !isEditable && (
+                <motion.div {...secondaryRevealMotion}>
+                    <Comments postId={post.id} />
+                </motion.div>
+            )}
         </motion.div>
     )
 }

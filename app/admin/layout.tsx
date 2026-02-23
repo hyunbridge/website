@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { motion, AnimatePresence } from "framer-motion"
+import { PAGE_TRANSITION } from "@/lib/motion"
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const { user, isLoading: authLoading, signOut } = useAuth()
@@ -224,13 +225,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
       {/* Main content */}
       <main className={cn("flex-1 overflow-auto transition-all duration-300", collapsed ? "ml-16" : "ml-64")}>
-        <AnimatePresence mode="popLayout" initial={false}>
+        <AnimatePresence mode="wait" initial={false}>
           <motion.div
             key={pathname}
-            initial={{ opacity: 0, y: 15 }}
+            initial={{ opacity: 0, y: 6 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 15 }}
-            transition={{ type: "spring", stiffness: 300, damping: 25, duration: 0.2 }}
+            exit={{ opacity: 0, y: 6 }}
+            transition={PAGE_TRANSITION}
             className="container py-8"
           >
             {children}

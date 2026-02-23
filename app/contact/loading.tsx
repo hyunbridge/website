@@ -13,11 +13,11 @@ export default function ContactLoading() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4 w-full">
-              <div className="bg-muted p-4 rounded-md min-h-[56px] flex items-center justify-between">
-                <Skeleton className="h-[24px] w-3/4" />
+              <div className="space-y-2">
+                <Skeleton className="h-5 w-28" />
                 <div className="flex items-center gap-2">
-                  <Skeleton className="h-8 w-8 rounded-md" />
-                  <Skeleton className="h-8 w-8 rounded-md" />
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-6 w-6 rounded-md" />
                 </div>
               </div>
             </div>
@@ -32,11 +32,13 @@ export default function ContactLoading() {
             <div className="space-y-6">
               {Array.from({ length: 2 }).map((_, i) => (
                 <div key={i} className="space-y-2">
-                  <Skeleton className="h-6 w-32" />
-                  <Skeleton className="h-4 w-full" />
-                  <div className="flex gap-2">
-                    <Skeleton className="h-9 w-full" />
-                    <Skeleton className="h-9 w-full" />
+                  <div className="flex items-center gap-2">
+                    <Skeleton className="h-5 w-5 rounded-sm" />
+                    <Skeleton className="h-5 w-24" />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Skeleton className="h-4 w-full" />
+                    <Skeleton className="h-6 w-6 rounded-md" />
                   </div>
                 </div>
               ))}
@@ -47,4 +49,3 @@ export default function ContactLoading() {
     </div>
   );
 }
-

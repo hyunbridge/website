@@ -3,6 +3,7 @@ import { MainNav } from "@/components/main-nav"
 import { ThemeProvider } from "@/components/theme-provider"
 import { NavigationEvents } from "@/components/navigation-events"
 import { RouteTransitionProvider } from "@/components/route-transition-provider"
+import { NavigationIntentProvider } from "@/components/navigation-intent-provider"
 import { AuthProvider } from "@/contexts/auth-context"
 
 import "./globals.css"
@@ -27,12 +28,14 @@ export default function RootLayout({
           href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css"
         />
       </head>
-      <body>
+      <body className="bg-background">
         <AuthProvider>
           <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
             <MainNav />
-            <main className="pt-16">
-              <RouteTransitionProvider>{children}</RouteTransitionProvider>
+            <main className="pt-16 min-h-screen bg-background">
+              <NavigationIntentProvider>
+                <RouteTransitionProvider>{children}</RouteTransitionProvider>
+              </NavigationIntentProvider>
             </main>
             <NavigationEvents />
           </ThemeProvider>

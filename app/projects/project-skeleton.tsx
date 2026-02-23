@@ -7,9 +7,8 @@ export function ProjectSkeleton() {
       {Array.from({ length: 6 }).map((_, i) => (
         <Card key={i} className="h-full overflow-hidden flex flex-col">
           <Skeleton className="h-48 w-full rounded-none" />
-          <CardHeader className="space-y-2">
+          <CardHeader>
             <Skeleton className="h-6 w-3/4" />
-            <Skeleton className="h-4 w-1/2" />
           </CardHeader>
           <CardContent className="flex-grow">
             <Skeleton className="h-4 w-full mb-2" />
@@ -17,7 +16,7 @@ export function ProjectSkeleton() {
             <Skeleton className="h-4 w-2/3" />
           </CardContent>
           <CardFooter>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <Skeleton className="h-5 w-16 rounded-full" />
               <Skeleton className="h-5 w-16 rounded-full" />
             </div>
@@ -27,4 +26,3 @@ export function ProjectSkeleton() {
     </div>
   )
 }
-

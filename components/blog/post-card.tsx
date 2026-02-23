@@ -1,25 +1,36 @@
-import Link from "next/link"
 import { formatDistanceToNow } from "date-fns"
 import type { Post } from "@/lib/blog-service"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { motion } from "framer-motion"
 import { MORPH_LAYOUT_TRANSITION } from "@/lib/motion"
+import { MorphLink } from "@/components/morph-link"
 
 interface PostCardProps {
   post: Post
   isAdmin?: boolean
+  index?: number
 }
 
-export function PostCard({ post, isAdmin = false }: PostCardProps) {
+export function PostCard({ post, isAdmin = false, index = 0 }: PostCardProps) {
   const publishedDate = post.published_at ? new Date(post.published_at) : new Date(post.created_at)
 
   const formattedDate = formatDistanceToNow(publishedDate, { addSuffix: true })
 
   return (
-    <motion.div layoutId={`blog-card-${post.id}`} transition={MORPH_LAYOUT_TRANSITION} className="h-full">
-      <Card className="h-full flex flex-col hover:shadow-md transition-shadow">
-        <Link href={isAdmin ? `/admin/blog/edit/${post.id}` : `/blog/${post.slug}`} className="flex-1 flex flex-col">
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: Math.min(index, 8) * 0.06, duration: 0.45, ...MORPH_LAYOUT_TRANSITION }}
+      whileHover={{ y: -4, transition: { duration: 0.2 } }}
+      className="h-full"
+    >
+      <Card className="h-full flex flex-col hover:shadow-md transition-shadow overflow-hidden border border-border">
+        <MorphLink
+          href={isAdmin ? `/admin/blog/edit/${post.id}` : `/blog/${post.slug}`}
+          morphIntent={isAdmin ? undefined : "blog-detail"}
+          className="flex-1 flex flex-col"
+        >
           {post.cover_image && (
             <motion.div
               layoutId={`blog-image-${post.id}`}
@@ -62,7 +73,7 @@ export function PostCard({ post, isAdmin = false }: PostCardProps) {
             </div>
             <p className="text-xs text-muted-foreground">{formattedDate}</p>
           </CardFooter>
-        </Link>
+        </MorphLink>
       </Card>
     </motion.div>
   )

@@ -2,7 +2,6 @@ import { Suspense } from "react"
 import { notFound } from "next/navigation"
 import { getProjectBySlug } from "@/lib/project-service"
 import { ProjectDetail } from "../project-detail"
-import { ProjectDetailSkeleton } from "../project-detail-skeleton"
 import { ErrorBoundary } from "@/components/error-boundary"
 import { ErrorMessage } from "@/components/error-message"
 
@@ -49,7 +48,7 @@ export default async function ProjectPage({ params }: Props) {
           />
         }
       >
-        <Suspense fallback={<ProjectDetailSkeleton />}>
+        <Suspense fallback={null}>
           <ProjectDetailWrapper slug={slug} />
         </Suspense>
       </ErrorBoundary>

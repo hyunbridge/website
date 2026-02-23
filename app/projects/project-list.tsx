@@ -5,9 +5,9 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/componen
 import { Badge } from "@/components/ui/badge"
 import { AlertTriangle } from "lucide-react"
 import Image from "next/image"
-import Link from "next/link"
 import type { Project } from "@/lib/project-service"
 import { MORPH_LAYOUT_TRANSITION } from "@/lib/motion"
+import { MorphLink } from "@/components/morph-link"
 
 export function ProjectList({ projects }: { projects: Project[] }) {
   if (!projects || projects.length === 0) {
@@ -27,14 +27,16 @@ export function ProjectList({ projects }: { projects: Project[] }) {
       {projects.map((project, index) => (
         <motion.div
           key={project.id}
-          layoutId={`project-card-${project.id}`}
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: index * 0.1, duration: 0.5, ...MORPH_LAYOUT_TRANSITION }}
           whileHover={{ y: -5, transition: { duration: 0.2 } }}
-          whileTap={{ scale: 0.98 }}
         >
-          <Link href={`/projects/${project.slug || project.id}`} className="block h-full">
+          <MorphLink
+            href={`/projects/${project.slug || project.id}`}
+            morphIntent="projects-detail"
+            className="block h-full"
+          >
             <Card className="h-full hover:shadow-md transition-shadow overflow-hidden flex flex-col border border-border">
               {project.cover_image && (
                 <motion.div
@@ -70,7 +72,7 @@ export function ProjectList({ projects }: { projects: Project[] }) {
                 </div>
               </CardFooter>
             </Card>
-          </Link>
+          </MorphLink>
         </motion.div>
       ))}
     </div>

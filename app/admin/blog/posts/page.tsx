@@ -4,11 +4,10 @@ import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { PostList } from "@/components/blog/post-list"
+import { BlogCardListSkeleton } from "@/components/loading/blog-card-skeleton"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Plus, Loader2, AlertCircle, RefreshCw } from "lucide-react"
 import { getPosts, createPost, type Post } from "@/lib/blog-service"
-import { Card, CardContent } from "@/components/ui/card"
-import { Skeleton } from "@/components/ui/skeleton"
 import { useAuth } from "@/contexts/auth-context"
 import Chance from "chance"
 
@@ -143,30 +142,5 @@ export default function BlogPostsPage() {
 }
 
 function AdminPostListSkeleton() {
-  return (
-    <div className="space-y-6">
-      {Array.from({ length: 3 }).map((_, i) => (
-        <Card key={i} className="w-full">
-          <div className="h-48 w-full">
-            <Skeleton className="h-full w-full" />
-          </div>
-          <CardContent className="p-4 space-y-4">
-            <Skeleton className="h-6 w-3/4" />
-            <div className="space-y-2">
-              <Skeleton className="h-4 w-full" />
-              <Skeleton className="h-4 w-full" />
-              <Skeleton className="h-4 w-2/3" />
-            </div>
-            <div className="flex justify-between">
-              <div className="flex gap-2">
-                <Skeleton className="h-5 w-16 rounded-full" />
-                <Skeleton className="h-5 w-16 rounded-full" />
-              </div>
-              <Skeleton className="h-4 w-24" />
-            </div>
-          </CardContent>
-        </Card>
-      ))}
-    </div>
-  )
+  return <BlogCardListSkeleton count={3} />
 }
