@@ -8,6 +8,7 @@ import { Comments } from "./comments"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
     Check,
@@ -23,6 +24,7 @@ import {
     Send,
     ChevronDown,
     Trash2,
+    Settings,
 } from "lucide-react"
 import {
     addPostTag,
@@ -41,6 +43,7 @@ import {
     type Tag,
     type Post,
     unpublishPost,
+    updatePost,
     updatePostCoverImage,
     updatePostVersionSnapshot,
 } from "@/lib/blog-service"
@@ -50,6 +53,14 @@ import { motion } from "framer-motion"
 import { MORPH_LAYOUT_TRANSITION } from "@/lib/motion"
 import { VersionHistory } from "./version-history"
 import { textSimilarity, blocksToText, SIMILARITY_THRESHOLD } from "./blocknote-inner"
+import { Label } from "@/components/ui/label"
+import {
+    Dialog,
+    DialogContent,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog"
 import {
     Popover,
     PopoverContent,
@@ -61,6 +72,7 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { Switch } from "@/components/ui/switch"
 import { getPresignedUrl } from "@/lib/s3-service"
 import { useNavigationIntent } from "@/components/navigation-intent-provider"
 
@@ -82,9 +94,14 @@ export function SeamlessPostView({ post: initialPost, mode = "view" }: Props) {
     const [isPublished, setIsPublished] = useState(post.is_published)
     const [allTags, setAllTags] = useState<Tag[]>([])
     const [postTags, setPostTags] = useState<Tag[]>(post.tags || [])
+    const [settingsSummaryDraft, setSettingsSummaryDraft] = useState(post.summary || "")
+    const [settingsSlugDraft, setSettingsSlugDraft] = useState(post.slug || "")
+    const [settingsEnableCommentsDraft, setSettingsEnableCommentsDraft] = useState(!!post.enable_comments)
     const [newTagName, setNewTagName] = useState("")
     const [showHistory, setShowHistory] = useState(false)
+    const [showSettingsModal, setShowSettingsModal] = useState(false)
     const [isSavingVersion, setIsSavingVersion] = useState(false)
+    const [isSavingSettings, setIsSavingSettings] = useState(false)
     const [isDeleting, setIsDeleting] = useState(false)
     const titleSaveTimer = useRef<NodeJS.Timeout | null>(null)
     const autoVersionSaveTimer = useRef<NodeJS.Timeout | null>(null)
@@ -147,27 +164,36 @@ export function SeamlessPostView({ post: initialPost, mode = "view" }: Props) {
         return () => window.clearTimeout(timer)
     }, [mode, pathname, getRecentIntent])
 
+    const normalizeSlugInput = useCallback((value: string) => {
+        return value
+            .toLowerCase()
+            .replace(/[^\w\s-]/gi, "")
+            .replace(/\s+/g, "-")
+            .replace(/-+/g, "-")
+            .replace(/^-+|-+$/g, "")
+            .trim()
+    }, [])
+
     const buildSafeSlug = useCallback(
-        (rawTitle: string) => {
-            const slug = rawTitle
-                .toLowerCase()
-                .replace(/[^\w\s-]/gi, "")
-                .replace(/\s+/g, "-")
-                .replace(/-+/g, "-")
-                .trim()
-            return slug || post.slug || `untitled-${post.id.slice(0, 8)}`
+        (rawValue: string, fallbackSlug?: string | null) => {
+            const slug = normalizeSlugInput(rawValue)
+            return slug || fallbackSlug || `untitled-${post.id.slice(0, 8)}`
         },
-        [post.id, post.slug],
+        [normalizeSlugInput, post.id],
     )
 
     const flushTitleNow = useCallback(
         async (nextTitle: string) => {
             if (!isEditable || !post.id) return
-            const slug = buildSafeSlug(nextTitle)
+            const currentDerivedSlug = normalizeSlugInput(post.title || "")
+            const shouldPreserveCustomSlug = !!post.slug && post.slug !== currentDerivedSlug
+            const slug = shouldPreserveCustomSlug
+                ? post.slug
+                : buildSafeSlug(nextTitle, post.slug)
             await renamePost(post.id, nextTitle, slug)
             setPost((prev) => ({ ...prev, title: nextTitle, slug }))
         },
-        [isEditable, post.id, buildSafeSlug],
+        [isEditable, post.id, post.slug, post.title, buildSafeSlug, normalizeSlugInput],
     )
 
     const flushDraftContentNow = useCallback(async () => {
@@ -455,6 +481,32 @@ export function SeamlessPostView({ post: initialPost, mode = "view" }: Props) {
             transition: { duration: 0.12 },
         }
 
+    const openSettingsModal = () => {
+        setSettingsSummaryDraft(post.summary || "")
+        setSettingsSlugDraft(post.slug || buildSafeSlug(title))
+        setSettingsEnableCommentsDraft(!!post.enable_comments)
+        setShowSettingsModal(true)
+    }
+
+    const handleSaveSettings = async () => {
+        if (!isEditable || isSavingSettings) return
+        setIsSavingSettings(true)
+        try {
+            const updatedPost = await updatePost(post.id, {
+                summary: settingsSummaryDraft,
+                slug: buildSafeSlug(settingsSlugDraft, buildSafeSlug(title)),
+                enable_comments: settingsEnableCommentsDraft,
+            })
+            setPost(updatedPost)
+            setSettingsSlugDraft(updatedPost.slug || "")
+            setShowSettingsModal(false)
+        } catch (error) {
+            console.error("Failed to save settings:", error)
+        } finally {
+            setIsSavingSettings(false)
+        }
+    }
+
     // Non-author readers: show loading state or "not published" message
     if (!isEditable) {
         if (publishedVersionLoading) {
@@ -601,6 +653,11 @@ export function SeamlessPostView({ post: initialPost, mode = "view" }: Props) {
                     </button>
 
                     <div className="flex-1" />
+
+                    <Button variant="ghost" size="sm" className="text-xs" onClick={openSettingsModal}>
+                        <Settings className="h-3.5 w-3.5 mr-1" />
+                        Settings
+                    </Button>
 
                     {/* Cover image */}
                     <Button
@@ -837,6 +894,69 @@ export function SeamlessPostView({ post: initialPost, mode = "view" }: Props) {
                     <Comments postId={post.id} />
                 </motion.div>
             )}
+
+            <Dialog open={showSettingsModal} onOpenChange={setShowSettingsModal}>
+                <DialogContent className="sm:max-w-xl bg-background/90 backdrop-blur-xl border-border/60">
+                    <DialogHeader>
+                        <DialogTitle>Post Settings</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="post-settings-slug" className="text-xs">Slug</Label>
+                            <Input
+                                id="post-settings-slug"
+                                value={settingsSlugDraft}
+                                onChange={(e) => setSettingsSlugDraft(e.target.value)}
+                                placeholder="post-slug"
+                                className="h-9 text-sm"
+                            />
+                            <p className="text-[11px] text-muted-foreground">
+                                URL: /blog/{buildSafeSlug(settingsSlugDraft, buildSafeSlug(title))}
+                            </p>
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label className="text-xs">Summary</Label>
+                            <Textarea
+                                value={settingsSummaryDraft}
+                                onChange={(e) => setSettingsSummaryDraft(e.target.value)}
+                                placeholder="Short summary for post cards and previews"
+                                className="min-h-20 text-sm"
+                            />
+                            <p className="text-[11px] text-muted-foreground">
+                                Saved to the current draft metadata.
+                            </p>
+                        </div>
+
+                        <div className="flex items-center justify-between rounded-md border px-3 py-2">
+                            <div>
+                                <Label htmlFor="post-settings-comments" className="text-xs">Comments</Label>
+                                <p className="text-[11px] text-muted-foreground">Allow comments on the public post page</p>
+                            </div>
+                            <Switch
+                                id="post-settings-comments"
+                                checked={settingsEnableCommentsDraft}
+                                onCheckedChange={setSettingsEnableCommentsDraft}
+                            />
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button type="button" variant="ghost" onClick={() => setShowSettingsModal(false)} disabled={isSavingSettings}>
+                            Cancel
+                        </Button>
+                        <Button type="button" onClick={handleSaveSettings} disabled={isSavingSettings}>
+                            {isSavingSettings ? (
+                                <>
+                                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                    Saving...
+                                </>
+                            ) : (
+                                "Save Settings"
+                            )}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </motion.div>
     )
 }

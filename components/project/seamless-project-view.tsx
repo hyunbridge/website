@@ -95,6 +95,7 @@ export function SeamlessProjectView({ project: initialProject, mode = "view" }: 
     const [projectTags, setProjectTags] = useState<Tag[]>(project.tags || [])
     const [projectLinks, setProjectLinks] = useState(project.links || [])
     const [settingsSummaryDraft, setSettingsSummaryDraft] = useState(project.summary || "")
+    const [settingsSlugDraft, setSettingsSlugDraft] = useState(project.slug || "")
 
     const [settingsLinksDraft, setSettingsLinksDraft] = useState(project.links || [])
     const [newTagName, setNewTagName] = useState("")
@@ -168,27 +169,36 @@ export function SeamlessProjectView({ project: initialProject, mode = "view" }: 
         return () => window.clearTimeout(timer)
     }, [mode, pathname, getRecentIntent])
 
+    const normalizeSlugInput = useCallback((value: string) => {
+        return value
+            .toLowerCase()
+            .replace(/[^\w\s-]/gi, "")
+            .replace(/\s+/g, "-")
+            .replace(/-+/g, "-")
+            .replace(/^-+|-+$/g, "")
+            .trim()
+    }, [])
+
     const buildSafeSlug = useCallback(
-        (rawTitle: string) => {
-            const slug = rawTitle
-                .toLowerCase()
-                .replace(/[^\w\s-]/gi, "")
-                .replace(/\s+/g, "-")
-                .replace(/-+/g, "-")
-                .trim()
-            return slug || project.slug || `project-${project.id.slice(0, 8)}`
+        (rawValue: string, fallbackSlug?: string | null) => {
+            const slug = normalizeSlugInput(rawValue)
+            return slug || fallbackSlug || `project-${project.id.slice(0, 8)}`
         },
-        [project.id, project.slug],
+        [normalizeSlugInput, project.id],
     )
 
     const flushTitleNow = useCallback(
         async (nextTitle: string) => {
             if (!isEditable || !project.id) return
-            const slug = buildSafeSlug(nextTitle)
+            const currentDerivedSlug = normalizeSlugInput(project.title || "")
+            const shouldPreserveCustomSlug = !!project.slug && project.slug !== currentDerivedSlug
+            const slug = shouldPreserveCustomSlug
+                ? project.slug
+                : buildSafeSlug(nextTitle, project.slug)
             await renameProject(project.id, nextTitle, slug)
             setProject((prev) => ({ ...prev, title: nextTitle, slug }))
         },
-        [isEditable, project.id, buildSafeSlug],
+        [isEditable, project.id, project.slug, project.title, buildSafeSlug, normalizeSlugInput],
     )
 
     const flushDraftContentNow = useCallback(async () => {
@@ -518,6 +528,7 @@ export function SeamlessProjectView({ project: initialProject, mode = "view" }: 
 
     const openSettingsModal = () => {
         setSettingsSummaryDraft(summary)
+        setSettingsSlugDraft(project.slug || buildSafeSlug(title))
         setSettingsLinksDraft(projectLinks)
         setNewLinkLabel("")
         setNewLinkUrl("")
@@ -528,16 +539,19 @@ export function SeamlessProjectView({ project: initialProject, mode = "view" }: 
         if (!isEditable || isSavingSettings) return
         setIsSavingSettings(true)
         try {
+            const nextSlug = buildSafeSlug(settingsSlugDraft, buildSafeSlug(title))
             const updatedProject = await updateProject(
                 project.id,
                 {
                     summary: settingsSummaryDraft,
+                    slug: nextSlug,
                 },
                 undefined,
                 normalizedProjectLinksPayload,
             )
             setProject(updatedProject)
             setSummary(updatedProject.summary || "")
+            setSettingsSlugDraft(updatedProject.slug || "")
 
             setProjectLinks(updatedProject.links || [])
             setShowSettingsModal(false)
@@ -1005,6 +1019,20 @@ export function SeamlessProjectView({ project: initialProject, mode = "view" }: 
                         <DialogTitle>Project Settings</DialogTitle>
                     </DialogHeader>
                     <div className="space-y-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="project-settings-slug" className="text-xs">Slug</Label>
+                            <Input
+                                id="project-settings-slug"
+                                value={settingsSlugDraft}
+                                onChange={(e) => setSettingsSlugDraft(e.target.value)}
+                                placeholder="project-slug"
+                                className="h-9 text-sm"
+                            />
+                            <p className="text-[11px] text-muted-foreground">
+                                URL: /projects/{buildSafeSlug(settingsSlugDraft, buildSafeSlug(title))}
+                            </p>
+                        </div>
+
                         <div className="space-y-2">
                             <Label className="text-xs">Summary</Label>
                             <Textarea
