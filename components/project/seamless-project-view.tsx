@@ -223,10 +223,12 @@ export function SeamlessProjectView({ project: initialProject, mode = "view" }: 
         try {
             if (!user?.id) throw new Error("No user")
             const { item: currentProject, currentVersion, latestVersion } = await getProjectVersioningState(project.id)
-            const currentText = blocksToText(currentVersion.body_text || "[]")
+            const currentVersionContent = JSON.stringify(currentVersion.body_json || [])
+            const currentText = blocksToText(currentVersionContent)
 
             if (latestVersion) {
-                const prevText = blocksToText(latestVersion.body_text || "[]")
+                const prevVersionContent = JSON.stringify(latestVersion.body_json || [])
+                const prevText = blocksToText(prevVersionContent)
                 const similarity = textSimilarity(prevText, currentText)
 
                 if (!options?.forceNewVersion && similarity >= SIMILARITY_THRESHOLD) {
@@ -236,7 +238,7 @@ export function SeamlessProjectView({ project: initialProject, mode = "view" }: 
                         // Small change → update existing latest version (only if it's not the published snapshot)
                         await updateProjectVersionSnapshot(latestVersion.id, {
                             title: currentVersion.title || currentProject.title || "Untitled",
-                            content: currentVersion.body_text || "[]",
+                            content: currentVersionContent,
                             summary: currentVersion.summary || currentProject.summary || "",
                             change_description: description || latestVersion.change_description,
                         })
@@ -252,7 +254,7 @@ export function SeamlessProjectView({ project: initialProject, mode = "view" }: 
                 versionNumber: nextNum,
                 bodyFormat: currentVersion.body_format || "json",
                 title: currentVersion.title || currentProject.title || "Untitled",
-                content: currentVersion.body_text || "[]",
+                content: currentVersionContent,
                 summary: currentVersion.summary || currentProject.summary || "",
                 createdBy: user.id,
                 changeDescription: description || `Version ${nextNum}`,

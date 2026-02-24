@@ -62,7 +62,6 @@ CREATE TABLE IF NOT EXISTS public.content_items (
   current_version_id uuid NULL,
   published_version_id uuid NULL,
   source text NOT NULL DEFAULT 'supabase',
-  source_ref text NULL,
   created_at timestamp with time zone NOT NULL DEFAULT now(),
   updated_at timestamp with time zone NOT NULL DEFAULT now(),
 
@@ -74,19 +73,16 @@ CREATE TABLE IF NOT EXISTS public.content_items (
 
 COMMENT ON TABLE public.content_items IS 'Core metadata shared by all content types.';
 COMMENT ON COLUMN public.content_items.slug IS 'Globally unique slug when present.';
-COMMENT ON COLUMN public.content_items.source_ref IS 'Optional upstream reference (e.g., Notion page ID).';
 
 CREATE TABLE IF NOT EXISTS public.content_versions (
   id uuid NOT NULL DEFAULT extensions.uuid_generate_v4(),
   content_item_id uuid NOT NULL,
   version_number integer NOT NULL,
   snapshot_status text NOT NULL DEFAULT 'draft',
-  body_format text NOT NULL DEFAULT 'html',
+  body_format text NOT NULL DEFAULT 'json',
   title text NOT NULL,
   summary text NULL,
-  body_text text NULL,
-  body_json jsonb NULL,
-  rendered_html text NULL,
+  body_json jsonb NOT NULL DEFAULT '[]'::jsonb,
   created_by uuid NULL,
   change_description text NULL,
   created_at timestamp with time zone NOT NULL DEFAULT now(),
@@ -95,14 +91,12 @@ CREATE TABLE IF NOT EXISTS public.content_versions (
   CONSTRAINT content_versions_content_item_id_fkey FOREIGN KEY (content_item_id) REFERENCES public.content_items(id) ON DELETE CASCADE,
   CONSTRAINT content_versions_created_by_fkey FOREIGN KEY (created_by) REFERENCES auth.users(id) ON DELETE SET NULL,
   CONSTRAINT content_versions_item_version_key UNIQUE (content_item_id, version_number),
-  CONSTRAINT content_versions_body_format_check CHECK (body_format IN ('html', 'markdown', 'json')),
+  CONSTRAINT content_versions_body_format_check CHECK (body_format IN ('json')),
   CONSTRAINT content_versions_snapshot_status_check CHECK (snapshot_status IN ('draft', 'published', 'archived'))
 );
 
 COMMENT ON TABLE public.content_versions IS 'Version snapshots for content items.';
-COMMENT ON COLUMN public.content_versions.body_text IS 'Primary body for html/markdown.';
 COMMENT ON COLUMN public.content_versions.body_json IS 'Structured editor document when using json.';
-COMMENT ON COLUMN public.content_versions.rendered_html IS 'Optional render cache.';
 
 ALTER TABLE public.content_items
   DROP CONSTRAINT IF EXISTS content_items_current_version_id_fkey;
@@ -135,24 +129,11 @@ CREATE TABLE IF NOT EXISTS public.content_item_tags (
   CONSTRAINT content_item_tags_tag_id_fkey FOREIGN KEY (tag_id) REFERENCES public.content_tags(id) ON DELETE CASCADE
 );
 
-CREATE TABLE IF NOT EXISTS public.content_links (
-  id uuid NOT NULL DEFAULT extensions.uuid_generate_v4(),
-  content_item_id uuid NOT NULL,
-  label text NOT NULL,
-  url text NOT NULL,
-  link_type text NULL,
-  sort_order integer NOT NULL DEFAULT 0,
-  created_at timestamp with time zone NOT NULL DEFAULT now(),
-  CONSTRAINT content_links_pkey PRIMARY KEY (id),
-  CONSTRAINT content_links_content_item_id_fkey FOREIGN KEY (content_item_id) REFERENCES public.content_items(id) ON DELETE CASCADE
-);
-
 CREATE TABLE IF NOT EXISTS public.assets (
   id uuid NOT NULL DEFAULT extensions.uuid_generate_v4(),
   owner_id uuid NULL,
   asset_type text NOT NULL DEFAULT 'image',
   storage_provider text NOT NULL DEFAULT 's3',
-  bucket text NULL,
   object_key text NOT NULL,
   public_url text NOT NULL,
   mime_type text NULL,
@@ -195,20 +176,13 @@ CREATE TABLE IF NOT EXISTS public.asset_deletion_queue (
 CREATE TABLE IF NOT EXISTS public.post_contents (
   content_item_id uuid NOT NULL,
   enable_comments boolean NOT NULL DEFAULT true,
-  canonical_url text NULL,
   CONSTRAINT post_contents_pkey PRIMARY KEY (content_item_id),
   CONSTRAINT post_contents_content_item_id_fkey FOREIGN KEY (content_item_id) REFERENCES public.content_items(id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS public.project_contents (
   content_item_id uuid NOT NULL,
-  featured boolean NOT NULL DEFAULT false,
   sort_order integer NOT NULL DEFAULT 0,
-  start_date date NULL,
-  end_date date NULL,
-  is_ongoing boolean NOT NULL DEFAULT false,
-  role text NULL,
-  organization text NULL,
   links jsonb NOT NULL DEFAULT '[]'::jsonb,
   CONSTRAINT project_contents_pkey PRIMARY KEY (content_item_id),
   CONSTRAINT project_contents_content_item_id_fkey FOREIGN KEY (content_item_id) REFERENCES public.content_items(id) ON DELETE CASCADE
@@ -216,17 +190,12 @@ CREATE TABLE IF NOT EXISTS public.project_contents (
 
 CREATE TABLE IF NOT EXISTS public.page_contents (
   content_item_id uuid NOT NULL,
-  page_key text NOT NULL,
-  route_path text NOT NULL,
   is_singleton boolean NOT NULL DEFAULT true,
   CONSTRAINT page_contents_pkey PRIMARY KEY (content_item_id),
-  CONSTRAINT page_contents_page_key_key UNIQUE (page_key),
-  CONSTRAINT page_contents_route_path_key UNIQUE (route_path),
   CONSTRAINT page_contents_content_item_id_fkey FOREIGN KEY (content_item_id) REFERENCES public.content_items(id) ON DELETE CASCADE
 );
 
 COMMENT ON TABLE public.content_tags IS 'Reusable tags across content types.';
-COMMENT ON TABLE public.content_links IS 'Ordered links for content items.';
 COMMENT ON TABLE public.assets IS 'Canonical uploaded assets (files/images) stored in object storage.';
 COMMENT ON TABLE public.content_version_assets IS 'Associates assets to specific content versions.';
 COMMENT ON TABLE public.asset_deletion_queue IS 'Outbox queue for asynchronous asset deletion from object storage.';
@@ -256,9 +225,6 @@ CREATE INDEX IF NOT EXISTS idx_content_versions_item_version
 CREATE INDEX IF NOT EXISTS idx_content_item_tags_tag
   ON public.content_item_tags (tag_id);
 
-CREATE INDEX IF NOT EXISTS idx_content_links_item_sort
-  ON public.content_links (content_item_id, sort_order ASC);
-
 CREATE UNIQUE INDEX IF NOT EXISTS idx_assets_object_key_unique
   ON public.assets (object_key);
 
@@ -274,11 +240,8 @@ CREATE INDEX IF NOT EXISTS idx_content_version_assets_version
 CREATE INDEX IF NOT EXISTS idx_asset_deletion_queue_status_next_attempt
   ON public.asset_deletion_queue (status, next_attempt_at ASC);
 
-CREATE INDEX IF NOT EXISTS idx_project_contents_featured_sort
-  ON public.project_contents (featured DESC, sort_order ASC);
-
-CREATE INDEX IF NOT EXISTS idx_page_contents_route_path
-  ON public.page_contents (route_path);
+CREATE INDEX IF NOT EXISTS idx_project_contents_sort
+  ON public.project_contents (sort_order ASC);
 
 -- ------------------------------------------------------------------
 -- Triggers
@@ -320,7 +283,6 @@ ALTER TABLE public.content_items ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.content_versions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.content_tags ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.content_item_tags ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.content_links ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.assets ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.content_version_assets ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.asset_deletion_queue ENABLE ROW LEVEL SECURITY;
@@ -430,20 +392,6 @@ CREATE POLICY "Owners can manage content item tags."
   )
   WITH CHECK (
     EXISTS (SELECT 1 FROM public.content_items ci WHERE ci.id = content_item_tags.content_item_id AND ci.owner_id = auth.uid())
-  );
-
-DROP POLICY IF EXISTS "Content links are viewable by everyone." ON public.content_links;
-CREATE POLICY "Content links are viewable by everyone."
-  ON public.content_links FOR SELECT USING (true);
-
-DROP POLICY IF EXISTS "Owners can manage content links." ON public.content_links;
-CREATE POLICY "Owners can manage content links."
-  ON public.content_links FOR ALL
-  USING (
-    EXISTS (SELECT 1 FROM public.content_items ci WHERE ci.id = content_links.content_item_id AND ci.owner_id = auth.uid())
-  )
-  WITH CHECK (
-    EXISTS (SELECT 1 FROM public.content_items ci WHERE ci.id = content_links.content_item_id AND ci.owner_id = auth.uid())
   );
 
 DROP POLICY IF EXISTS "Assets are viewable by owners." ON public.assets;

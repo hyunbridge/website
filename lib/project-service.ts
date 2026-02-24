@@ -27,7 +27,7 @@ export type Project = {
     slug: string
     summary: string
     cover_image: string | null
-    content: string // stored in content_versions.body_text (JSON blocks or HTML)
+    content: string // service returns serialized JSON or plain text body depending on body_format
     is_published: boolean
     published_at: string | null
     published_version_id?: string | null
@@ -139,7 +139,8 @@ type ProjectContentRow = {
 
 type ContentVersionRow = {
     id: string
-    body_text: string | null
+    body_json?: unknown | null
+    body_format?: string | null
 }
 
 // ---------------------------------------------------------------------------
@@ -159,6 +160,38 @@ function formatDbError(error: any): string {
     if (typeof error === "string") return error
     const parts = [error.message, error.details, error.hint, error.code].filter(Boolean)
     return parts.length > 0 ? parts.join(" | ") : JSON.stringify(error)
+}
+
+function safeParseJson(value: string) {
+    try {
+        return JSON.parse(value)
+    } catch {
+        return null
+    }
+}
+
+function getVersionContent(row?: { body_format?: string | null; body_json?: unknown | null } | null) {
+    if (!row) return "[]"
+    if (row.body_json !== undefined && row.body_json !== null) return JSON.stringify(row.body_json)
+    return "[]"
+}
+
+function toVersionBodyColumns(content: string, bodyFormat: string) {
+    if (bodyFormat !== "json") {
+        throw new Error(`Unsupported body_format: ${bodyFormat}`)
+    }
+    const parsed = safeParseJson(content)
+    if (parsed === null) {
+        throw new Error("BlockNote content must be valid JSON")
+    }
+    return { body_json: parsed }
+}
+
+function normalizeVersionRow<T extends { body_json?: unknown | null; body_format?: string | null }>(row: T): T {
+    return {
+        ...row,
+        body_json: row.body_json ?? [],
+    }
 }
 
 function normalizeProjectLinks(value: unknown, projectId: string): ProjectLink[] {
@@ -234,11 +267,11 @@ async function getVersionBodyMap(versionIds: string[]): Promise<Record<string, C
 
     const { data, error } = await db
         .from("content_versions")
-        .select("id, body_text")
+        .select("id, body_json, body_format")
         .in("id", ids)
     if (error) throw new Error(`Failed to fetch content versions: ${formatDbError(error)}`)
 
-    return Object.fromEntries(((data || []) as ContentVersionRow[]).map((row) => [row.id, row]))
+    return Object.fromEntries(((data || []) as ContentVersionRow[]).map((row) => [row.id, normalizeVersionRow(row)]))
 }
 
 async function hydrateProjects(items: any[], versionPointer: "current" | "published" = "current"): Promise<Project[]> {
@@ -266,7 +299,7 @@ async function hydrateProjects(items: any[], versionPointer: "current" | "publis
             ...item,
             project_contents: projectContentsMap[item.id] ? [projectContentsMap[item.id]] : [],
             tags: (projectTagsMap[item.id] || []).map((tag) => ({ content_tags: tag })),
-            content_versions: version ? { body_text: version.body_text } : null,
+            content_versions: version ? { body_json: version.body_json, body_format: version.body_format } : null,
         }, versionPointer === "published", owner)
     })
 }
@@ -378,12 +411,12 @@ function mapToProject(item: any, usePublishedVersion = false, owner?: { full_nam
     let content = "[]"
     if (usePublishedVersion && item.content_versions) {
         content = Array.isArray(item.content_versions)
-            ? item.content_versions[0]?.body_text || "[]"
-            : item.content_versions?.body_text || "[]"
+            ? getVersionContent(item.content_versions[0])
+            : getVersionContent(item.content_versions)
     } else if (!usePublishedVersion && item.content_versions) {
         content = Array.isArray(item.content_versions)
-            ? item.content_versions[0]?.body_text || "[]"
-            : item.content_versions?.body_text || "[]"
+            ? getVersionContent(item.content_versions[0])
+            : getVersionContent(item.content_versions)
     }
 
     const tags = item.tags
@@ -467,7 +500,7 @@ export async function createProject(input: CreateProjectInput): Promise<Project>
                 body_format: "json", // Now defaulting to blocknote json
                 title: input.title,
                 summary: input.summary || "",
-                body_text: input.content || "[]",
+                ...toVersionBodyColumns(input.content || "[]", "json"),
                 created_by: input.owner_id,
                 change_description: "Initial creation",
             },
@@ -516,7 +549,7 @@ export async function updateProject(
 
     const mergedTitle = updates.title ?? currentVersion?.title ?? item.title
     const mergedSummary = updates.summary ?? currentVersion?.summary ?? item.summary ?? ""
-    const mergedContent = updates.content ?? currentVersion?.body_text ?? "[]"
+    const mergedContent = updates.content ?? getVersionContent(currentVersion) ?? "[]"
 
     // Prepare updates
     const itemUpdates: any = { updated_at: now }
@@ -563,6 +596,8 @@ export async function updateProject(
         if (latestError) throw latestError
 
         const nextVersion = latest?.[0]?.version_number ? latest[0].version_number + 1 : 1
+        const nextBodyFormat = currentVersion?.body_format || "json"
+        const nextBodyColumns = toVersionBodyColumns(mergedContent, nextBodyFormat)
 
         const { data: newVersion, error: insertErr } = await db
             .from("content_versions")
@@ -571,10 +606,10 @@ export async function updateProject(
                     content_item_id: id,
                     version_number: nextVersion,
                     snapshot_status: (itemUpdates.status || item.status) === "published" ? "published" : "draft",
-                    body_format: currentVersion?.body_format || "json",
+                    body_format: nextBodyFormat,
                     title: mergedTitle,
                     summary: mergedSummary,
-                    body_text: mergedContent,
+                    body_json: nextBodyColumns.body_json,
                     created_by: userId || item.owner_id,
                     change_description: changeDescription || `Version ${nextVersion}`,
                 },
@@ -591,9 +626,11 @@ export async function updateProject(
 
         itemUpdates.current_version_id = activeVersionId
     } else if (activeVersionId) {
+        const currentBodyFormat = currentVersion?.body_format || "json"
+        const bodyColumns = toVersionBodyColumns(mergedContent, currentBodyFormat)
         const { error: versionUpdateError } = await db
             .from("content_versions")
-            .update({ title: mergedTitle, summary: mergedSummary, body_text: mergedContent })
+            .update({ title: mergedTitle, summary: mergedSummary, ...bodyColumns })
             .eq("id", activeVersionId)
         if (versionUpdateError) throw versionUpdateError
     }
@@ -689,12 +726,12 @@ export async function publishProject(id: string, versionId?: string) {
 export async function getProjectPublishedVersion(versionId: string) {
     const { data, error } = await db
         .from("content_versions")
-        .select("title, body_text, summary")
+        .select("title, body_json, body_format, summary")
         .eq("id", versionId)
         .single()
 
     if (error || !data) throw error || new Error("Published version not found")
-    return { title: data.title, content: data.body_text, summary: data.summary }
+    return { title: data.title, content: getVersionContent(data), summary: data.summary }
 }
 
 export async function addProjectTag(projectId: string, tagId: string) {
@@ -748,7 +785,7 @@ export async function saveProjectDraftContent(projectId: string, contentJson: st
 
     const { error: versionError } = await db
         .from("content_versions")
-        .update({ body_text: contentJson })
+        .update({ body_format: "json", ...toVersionBodyColumns(contentJson, "json") })
         .eq("id", item.current_version_id)
     if (versionError) throw versionError
 
@@ -772,14 +809,14 @@ export async function getProjectVersioningState(projectId: string): Promise<Proj
 
     const { data: currentVersion, error: currentVersionError } = await db
         .from("content_versions")
-        .select("id, title, summary, body_text, body_format")
+        .select("id, title, summary, body_json, body_format")
         .eq("id", item.current_version_id)
         .single()
     if (currentVersionError || !currentVersion) throw currentVersionError || new Error("Current version not found")
 
     const { data: latestVersions, error: latestError } = await db
         .from("content_versions")
-        .select("id, version_number, title, summary, body_text, body_format, change_description")
+        .select("id, version_number, title, summary, body_json, body_format, change_description")
         .eq("content_item_id", projectId)
         .order("version_number", { ascending: false })
         .limit(1)
@@ -787,8 +824,8 @@ export async function getProjectVersioningState(projectId: string): Promise<Proj
 
     return {
         item,
-        currentVersion,
-        latestVersion: latestVersions?.[0] || null,
+        currentVersion: normalizeVersionRow(currentVersion),
+        latestVersion: latestVersions?.[0] ? normalizeVersionRow(latestVersions[0]) : null,
     }
 }
 
@@ -798,21 +835,26 @@ export async function updateProjectVersionSnapshot(
 ) {
     const payload: any = {}
     if (updates.title !== undefined) payload.title = updates.title
-    if (updates.content !== undefined) payload.body_text = updates.content
     if (updates.summary !== undefined) payload.summary = updates.summary
     if (updates.change_description !== undefined) payload.change_description = updates.change_description
+
+    let versionRowForContent: { content_item_id: string; body_format: string } | null = null
+    if (updates.content !== undefined) {
+        const { data: versionRow, error: versionRowError } = await db
+            .from("content_versions")
+            .select("content_item_id, body_format")
+            .eq("id", versionId)
+            .single()
+        if (versionRowError) throw versionRowError
+        versionRowForContent = versionRow
+        Object.assign(payload, toVersionBodyColumns(updates.content, versionRow.body_format || "json"))
+    }
 
     const { error } = await db.from("content_versions").update(payload).eq("id", versionId)
     if (error) throw error
 
-    if (updates.content !== undefined) {
-        const { data: versionRow, error: versionRowError } = await db
-            .from("content_versions")
-            .select("content_item_id")
-            .eq("id", versionId)
-            .single()
-        if (versionRowError) throw versionRowError
-        await syncEmbeddedAssetRefsForVersion(versionRow.content_item_id, versionId, updates.content)
+    if (updates.content !== undefined && versionRowForContent) {
+        await syncEmbeddedAssetRefsForVersion(versionRowForContent.content_item_id, versionId, updates.content)
     }
 }
 
@@ -836,7 +878,7 @@ export async function createProjectVersionFromSnapshot(params: {
                 snapshot_status: params.snapshotStatus || "draft",
                 body_format: params.bodyFormat,
                 title: params.title,
-                body_text: params.content,
+                ...toVersionBodyColumns(params.content, params.bodyFormat),
                 summary: params.summary,
                 created_by: params.createdBy,
                 change_description: params.changeDescription,
@@ -903,7 +945,7 @@ export async function updateProjectCoverImage(projectId: string, coverImage: str
 export async function getProjectVersions(projectId: string): Promise<ProjectVersion[]> {
     const { data, error } = await db
         .from("content_versions")
-        .select("id, version_number, content_item_id, title, body_text, summary, change_description, created_at, created_by")
+        .select("id, version_number, content_item_id, title, body_json, body_format, summary, change_description, created_at, created_by")
         .eq("content_item_id", projectId)
         .order("version_number", { ascending: false })
 
@@ -915,18 +957,21 @@ export async function getProjectVersions(projectId: string): Promise<ProjectVers
     const rows = data || []
     const authorMap = await getAuthorMap(rows.map((r: any) => r.created_by).filter(Boolean))
 
-    return rows.map((version: any) => ({
-        id: version.id,
-        version_number: version.version_number,
-        post_id: version.content_item_id,
-        title: version.title,
-        content: version.body_text || "[]",
-        summary: version.summary ?? undefined,
-        change_description: version.change_description,
-        created_at: version.created_at,
-        created_by: version.created_by,
-        creator: version.created_by ? { id: version.created_by, username: "", ...authorMap[version.created_by] } : null,
-    }))
+    return rows.map((rawVersion: any) => {
+        const version = normalizeVersionRow(rawVersion)
+        return {
+            id: version.id,
+            version_number: version.version_number,
+            post_id: version.content_item_id,
+            title: version.title,
+            content: getVersionContent(version),
+            summary: version.summary ?? undefined,
+            change_description: version.change_description,
+            created_at: version.created_at,
+            created_by: version.created_by,
+            creator: version.created_by ? { id: version.created_by, username: "", ...authorMap[version.created_by] } : null,
+        }
+    })
 }
 
 export async function restoreProjectVersion(projectId: string, versionNumber: number, userId: string) {
@@ -959,9 +1004,7 @@ export async function restoreProjectVersion(projectId: string, versionNumber: nu
                 body_format: versionData.body_format,
                 title: versionData.title,
                 summary: versionData.summary,
-                body_text: versionData.body_text,
                 body_json: versionData.body_json,
-                rendered_html: versionData.rendered_html,
                 created_by: userId,
                 change_description: `Restored to version ${versionNumber}`,
             },

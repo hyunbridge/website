@@ -17,7 +17,6 @@ export interface Database {
           current_version_id: string | null
           published_version_id: string | null
           source: string
-          source_ref: string | null
           created_at: string
           updated_at: string
         }
@@ -34,7 +33,6 @@ export interface Database {
           current_version_id?: string | null
           published_version_id?: string | null
           source?: string
-          source_ref?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -51,7 +49,6 @@ export interface Database {
           current_version_id?: string | null
           published_version_id?: string | null
           source?: string
-          source_ref?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -65,9 +62,7 @@ export interface Database {
           body_format: "html" | "markdown" | "json" | string
           title: string
           summary: string | null
-          body_text: string | null
-          body_json: Json | null
-          rendered_html: string | null
+          body_json: Json
           created_by: string | null
           change_description: string | null
           created_at: string
@@ -80,9 +75,7 @@ export interface Database {
           body_format?: "html" | "markdown" | "json" | string
           title: string
           summary?: string | null
-          body_text?: string | null
-          body_json?: Json | null
-          rendered_html?: string | null
+          body_json?: Json
           created_by?: string | null
           change_description?: string | null
           created_at?: string
@@ -95,9 +88,7 @@ export interface Database {
           body_format?: "html" | "markdown" | "json" | string
           title?: string
           summary?: string | null
-          body_text?: string | null
-          body_json?: Json | null
-          rendered_html?: string | null
+          body_json?: Json
           created_by?: string | null
           change_description?: string | null
           created_at?: string
@@ -140,42 +131,12 @@ export interface Database {
           created_at?: string
         }
       }
-      content_links: {
-        Row: {
-          id: string
-          content_item_id: string
-          label: string
-          url: string
-          link_type: string | null
-          sort_order: number
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          content_item_id: string
-          label: string
-          url: string
-          link_type?: string | null
-          sort_order?: number
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          content_item_id?: string
-          label?: string
-          url?: string
-          link_type?: string | null
-          sort_order?: number
-          created_at?: string
-        }
-      }
       assets: {
         Row: {
           id: string
           owner_id: string | null
           asset_type: string
           storage_provider: string
-          bucket: string | null
           object_key: string
           public_url: string
           mime_type: string | null
@@ -187,7 +148,6 @@ export interface Database {
           owner_id?: string | null
           asset_type?: string
           storage_provider?: string
-          bucket?: string | null
           object_key: string
           public_url: string
           mime_type?: string | null
@@ -199,7 +159,6 @@ export interface Database {
           owner_id?: string | null
           asset_type?: string
           storage_provider?: string
-          bucket?: string | null
           object_key?: string
           public_url?: string
           mime_type?: string | null
@@ -272,68 +231,44 @@ export interface Database {
         Row: {
           content_item_id: string
           enable_comments: boolean
-          canonical_url: string | null
         }
         Insert: {
           content_item_id: string
           enable_comments?: boolean
-          canonical_url?: string | null
         }
         Update: {
           content_item_id?: string
           enable_comments?: boolean
-          canonical_url?: string | null
         }
       }
       project_contents: {
         Row: {
           content_item_id: string
-          featured: boolean
           sort_order: number
-          start_date: string | null
-          end_date: string | null
-          is_ongoing: boolean
-          role: string | null
-          organization: string | null
+          links: Json
         }
         Insert: {
           content_item_id: string
-          featured?: boolean
           sort_order?: number
-          start_date?: string | null
-          end_date?: string | null
-          is_ongoing?: boolean
-          role?: string | null
-          organization?: string | null
+          links?: Json
         }
         Update: {
           content_item_id?: string
-          featured?: boolean
           sort_order?: number
-          start_date?: string | null
-          end_date?: string | null
-          is_ongoing?: boolean
-          role?: string | null
-          organization?: string | null
+          links?: Json
         }
       }
       page_contents: {
         Row: {
           content_item_id: string
-          page_key: string
-          route_path: string
           is_singleton: boolean
         }
         Insert: {
           content_item_id: string
-          page_key: string
-          route_path: string
           is_singleton?: boolean
         }
         Update: {
           content_item_id?: string
-          page_key?: string
-          route_path?: string
           is_singleton?: boolean
         }
       }
