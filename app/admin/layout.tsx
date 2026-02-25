@@ -5,7 +5,8 @@ import type React from "react"
 import { useEffect, useState } from "react"
 import { useRouter, usePathname } from "next/navigation"
 import Link from "next/link"
-import { useAuth } from "@/contexts/auth-context"
+import { AuthProvider, useAuth } from "@/contexts/auth-context"
+import { NavigationIntentProvider } from "@/components/navigation-intent-provider"
 import { LayoutDashboard, FileText, FolderKanban, Tags, LogOut, User, ChevronLeft, ChevronRight } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -14,6 +15,16 @@ import { motion, AnimatePresence } from "framer-motion"
 import { PAGE_TRANSITION } from "@/lib/motion"
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <AuthProvider>
+      <NavigationIntentProvider>
+        <AdminLayoutContent>{children}</AdminLayoutContent>
+      </NavigationIntentProvider>
+    </AuthProvider>
+  )
+}
+
+function AdminLayoutContent({ children }: { children: React.ReactNode }) {
   const { user, isLoading: authLoading, signOut } = useAuth()
   const router = useRouter()
   const pathname = usePathname()
