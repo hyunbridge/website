@@ -3,10 +3,8 @@
 import { useCallback, useEffect, useRef } from "react"
 import { type Block } from "@blocknote/core"
 import { useCreateBlockNote } from "@blocknote/react"
-import { BlockNoteView } from "@blocknote/mantine"
-import "@blocknote/core/fonts/inter.css"
-import "@blocknote/mantine/style.css"
 import { useTheme } from "next-themes"
+import { AppBlockNoteView } from "@/components/blocknote/app-blocknote-view"
 import { savePostDraftContent } from "@/lib/blog-service"
 import { uploadToS3 } from "@/lib/s3-service"
 
@@ -138,11 +136,11 @@ export default function BlockNoteInnerEditor({
 
     return (
         <div className="blocknote-wrapper">
-            <BlockNoteView
+            <AppBlockNoteView
                 editor={editor}
                 editable={editable}
                 onChange={handleChange}
-                theme={resolvedTheme === "dark" ? "dark" : "light"}
+                colorScheme={resolvedTheme === "dark" ? "dark" : "light"}
                 sideMenu={editable}
             />
         </div>

@@ -250,7 +250,18 @@
 }
 
 /* BlockNote seamless mode — align content with page layout */
+.blocknote-wrapper .bn-default-styles,
+.blocknote-seamless .bn-default-styles {
+  font-family:
+    Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto,
+    "Helvetica Neue", "Segoe UI", "Apple SD Gothic Neo", "Noto Sans KR",
+    "Malgun Gothic", "Apple Color Emoji", "Segoe UI Emoji",
+    "Segoe UI Symbol", sans-serif !important;
+}
+
 .blocknote-seamless .bn-editor {
+  background-color: transparent;
+  border-radius: 0;
   padding-inline: 0;
 }
 
@@ -265,4 +276,3 @@
 .blocknote-seamless .bn-editor[contenteditable="false"] + .bn-side-menu {
   display: none;
 }
-
