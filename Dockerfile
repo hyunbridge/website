@@ -73,14 +73,10 @@ ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
     NODE_ENV=production \
     PUPPETEER_CACHE_DIR=/app/.cache/puppeteer
 
-# Runtime environment variables will be provided via docker run -e flags
-COPY package.json package-lock.json ./
-RUN npm ci --only=production
-
-# Copy necessary files for production
-COPY --from=builder /app/.next ./.next
+# Copy Next.js standalone output and static assets
+COPY --from=builder /app/.next/standalone ./
+COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/public ./public
-COPY --from=builder /app/next.config.mjs ./next.config.mjs
 
 # Install Pretendard into system font directory from public folder
 RUN mkdir -p /usr/share/fonts/pretendard && \
@@ -95,4 +91,4 @@ USER node
 
 EXPOSE 3000
 
-CMD ["npm", "run", "start"]
+CMD ["node", "server.js"]
