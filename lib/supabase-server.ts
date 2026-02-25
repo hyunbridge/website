@@ -1,13 +1,10 @@
-import { createClient } from "@supabase/supabase-js";
-import type { Database } from "@/types/supabase";
+import { createClient } from "@supabase/supabase-js"
+import type { Database } from "@/types/supabase"
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
-const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ""
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ""
+const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || ""
 
-export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey);
-
-// Helper function to get authenticated supabase client
 export function getServerSupabase() {
   return createClient<Database>(supabaseUrl, supabaseAnonKey, {
     auth: {
@@ -15,7 +12,7 @@ export function getServerSupabase() {
       autoRefreshToken: true,
       detectSessionInUrl: true,
     },
-  });
+  })
 }
 
 export function getServiceRoleSupabase() {
@@ -32,7 +29,6 @@ export function getServiceRoleSupabase() {
   })
 }
 
-// Authentication with JWT token
 export function getAuthenticatedSupabase(token: string) {
   return createClient<Database>(supabaseUrl, supabaseAnonKey, {
     global: {
@@ -40,5 +36,6 @@ export function getAuthenticatedSupabase(token: string) {
         Authorization: `Bearer ${token}`,
       },
     },
-  });
+  })
 }
+

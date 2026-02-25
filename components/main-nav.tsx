@@ -3,13 +3,12 @@
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { motion } from "framer-motion"
-import { Home, FolderKanban, FileText, BookOpen, Menu, MessageSquare, Wrench } from "lucide-react"
+import { Home, FolderKanban, FileText, BookOpen, Menu, MessageSquare } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { useMobileMenu } from "@/hooks/use-mobile-menu"
-import { useAuth } from "@/contexts/auth-context"
 
 const navItems = [
   {
@@ -53,7 +52,6 @@ export function MainNav() {
   const pathname = usePathname()
   const router = useRouter()
   const { isOpen, setIsOpen } = useMobileMenu()
-  const { user } = useAuth()
 
   const handleNavigation = (href: string, external?: boolean) => {
     if (external) {
@@ -101,19 +99,6 @@ export function MainNav() {
           </div>
 
           <div className="flex items-center gap-2">
-            {user && (
-              <div className="hidden md:block">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => handleNavigation("/admin")}
-                  title="관리자 페이지"
-                >
-                  <Wrench className="h-4 w-4" />
-                </Button>
-              </div>
-            )}
-
             {/* Desktop Theme Toggle */}
             <div className="hidden md:block">
               <ThemeToggle />

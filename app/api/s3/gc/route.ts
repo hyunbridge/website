@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { DeleteObjectsCommand, S3Client } from "@aws-sdk/client-s3"
-import { getServiceRoleSupabase } from "@/lib/supabase"
+import { getServiceRoleSupabase } from "@/lib/supabase-server"
 
 function getS3Client() {
   return new S3Client({

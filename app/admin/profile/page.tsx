@@ -4,7 +4,7 @@ import type React from "react"
 
 import { useState, useEffect } from "react"
 import { useAuth } from "@/contexts/auth-context"
-import { supabase } from "@/lib/supabase"
+import { supabase } from "@/lib/supabase-client"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"

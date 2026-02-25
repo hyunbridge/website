@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { getAuthenticatedSupabase } from "@/lib/supabase"
+import { getAuthenticatedSupabase } from "@/lib/supabase-server"
 
 export async function requireAuthenticatedSupabase(request: Request) {
   const authHeader = request.headers.get("Authorization")
