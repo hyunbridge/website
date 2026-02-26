@@ -4,8 +4,11 @@ import { NotionAPI } from "notion-client"
 // Initialize the Notion API client
 const notionAPI = new NotionAPI()
 
-export async function GET(request: NextRequest, { params }: { params: { pageId: string } }) {
-  const { pageId } = params
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ pageId: string }> },
+) {
+  const { pageId } = await params
 
   if (!pageId) {
     return NextResponse.json({ error: "Page ID is required" }, { status: 400 })
@@ -21,4 +24,3 @@ export async function GET(request: NextRequest, { params }: { params: { pageId: 
     return NextResponse.json({ error: "Failed to fetch Notion page" }, { status: 500 })
   }
 }
-

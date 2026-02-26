@@ -1,16 +1,30 @@
 "use server";
 
-import jwt from "jsonwebtoken";
+import jwt, { type JwtPayload } from "jsonwebtoken";
 
 // Use environment variable for email address
 const PROTECTED_EMAIL = process.env.PROTECTED_EMAIL;
+const JWT_SECRET_KEY = process.env.JWT_SECRET_KEY;
+
+type VerifyTurnstileResult =
+  | { success: true; token: string; email: string | undefined }
+  | { success: false; error: string };
+
+type CheckEmailVerificationResult =
+  | { success: true; verified: boolean; email: string | undefined }
+  | { success: false };
 
 // Turnstile verification function
-export async function verifyTurnstile(formData: FormData) {
+export async function verifyTurnstile(
+  formData: FormData,
+): Promise<VerifyTurnstileResult> {
   const token = formData.get("cf-turnstile-response") as string;
 
   if (!token) {
     return { success: false, error: "Missing token" };
+  }
+  if (!JWT_SECRET_KEY) {
+    return { success: false, error: "Server configuration error" };
   }
 
   try {
@@ -33,7 +47,7 @@ export async function verifyTurnstile(formData: FormData) {
 
     if (data.success) {
       // Generate a JWT with a 'verified' flag
-      const token = jwt.sign({ verified: true }, process.env.JWT_SECRET_KEY, {
+      const token = jwt.sign({ verified: true }, JWT_SECRET_KEY, {
         expiresIn: "30m",
       });
 
@@ -58,12 +72,25 @@ export async function verifyTurnstile(formData: FormData) {
 }
 
 // Check if user is already verified
-export async function checkEmailVerification(token: string) {
+export async function checkEmailVerification(
+  token: string,
+): Promise<CheckEmailVerificationResult> {
+  if (!JWT_SECRET_KEY) {
+    return {
+      success: false,
+    };
+  }
+
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
+    const decoded = jwt.verify(token, JWT_SECRET_KEY);
+    const verified =
+      typeof decoded === "object" &&
+      decoded !== null &&
+      "verified" in decoded &&
+      Boolean((decoded as JwtPayload & { verified?: unknown }).verified);
     return {
       success: true,
-      verified: decoded.verified,
+      verified,
       email: PROTECTED_EMAIL,
     };
   } catch (error) {

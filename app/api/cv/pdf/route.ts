@@ -72,7 +72,7 @@ export async function GET(request: Request) {
         "--disable-dev-shm-usage",
         "--disable-gpu"
       ],
-      headless: "new", // Use new headless mode for newer versions
+      headless: true,
       executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined,
     })
     
@@ -86,7 +86,8 @@ export async function GET(request: Request) {
         await document.fonts.ready
       })
 
-      const pdfBuffer = await page.pdf({ format: "A4", printBackground: true })
+      const pdfBytes = await page.pdf({ format: "A4", printBackground: true })
+      const pdfBuffer = Buffer.from(pdfBytes)
       
       // Cache the newly generated PDF if we have a valid last modified timestamp
       if (lastModified) {

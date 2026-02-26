@@ -5,9 +5,10 @@ import { PostList } from "@/components/blog/post-list"
 import { BlogCardListSkeleton } from "@/components/loading/blog-card-skeleton"
 import Link from "next/link"
 
-export async function generateMetadata({ params }: { params: { id: string } }) {
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
   try {
-    const { tag } = await getPostsByTagId(params.id, 1, 1, true)
+    const { id } = await params
+    const { tag } = await getPostsByTagId(id, 1, 1, true)
 
     return {
       title: `${tag.name} | Blog Tags | Hyungyo Seo`,
@@ -21,9 +22,10 @@ export async function generateMetadata({ params }: { params: { id: string } }) {
   }
 }
 
-export default async function TagPostsPage({ params }: { params: { id: string } }) {
+export default async function TagPostsPage({ params }: { params: Promise<{ id: string }> }) {
   try {
-    const { tag } = await getPostsByTagId(params.id, 1, 1, true)
+    const { id } = await params
+    const { tag } = await getPostsByTagId(id, 1, 1, true)
 
     return (
       <div className="container py-8 md:py-12">
@@ -36,7 +38,7 @@ export default async function TagPostsPage({ params }: { params: { id: string } 
         <h1 className="text-3xl md:text-4xl font-bold mb-8">Posts tagged with "{tag.name}"</h1>
 
         <Suspense fallback={<LoadingSkeleton />}>
-          <TagPostsListWrapper tagId={params.id} />
+          <TagPostsListWrapper tagId={id} />
         </Suspense>
       </div>
     )

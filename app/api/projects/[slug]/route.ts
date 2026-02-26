@@ -1,9 +1,13 @@
 import { getProjectBySlug } from "@/lib/project-service"
-import { NextResponse } from "next/server"
+import { NextRequest, NextResponse } from "next/server"
 
-export async function GET(request: Request, { params }: { params: { slug: string } }) {
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ slug: string }> },
+) {
   try {
-    const project = await getProjectBySlug(params.slug)
+    const { slug } = await params
+    const project = await getProjectBySlug(slug)
     if (!project) {
       return NextResponse.json({ error: "Project not found" }, { status: 404 })
     }

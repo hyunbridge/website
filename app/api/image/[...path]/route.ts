@@ -31,7 +31,10 @@ const getCachedImage = async (fetchUrl: string, cacheKey: string) => {
     return cachedFetcher()
 }
 
-export async function GET(request: NextRequest, { params }: { params: { path: string[] } }) {
+export async function GET(
+    request: NextRequest,
+    _context: { params: Promise<{ path: string[] }> }
+) {
     const { searchParams } = new URL(request.url)
     const url = searchParams.get("url")
 

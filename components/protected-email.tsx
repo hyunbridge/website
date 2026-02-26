@@ -46,7 +46,7 @@ export function ProtectedEmail() {
 
     const result = await verifyTurnstile(formData);
 
-    if (result.success && result.token) {
+    if (result.success) {
       localStorage.setItem("email-verification-token", result.token);
       setEmail(result.email || "");
     } else {

@@ -1,11 +1,15 @@
 import type React from "react"
+import { Slot } from "@radix-ui/react-slot"
 import { cn } from "@/lib/utils"
 
-interface VisuallyHiddenProps extends React.HTMLAttributes<HTMLSpanElement> {}
+type VisuallyHiddenProps = React.HTMLAttributes<HTMLSpanElement> & {
+  asChild?: boolean
+}
 
-export function VisuallyHidden({ className, ...props }: VisuallyHiddenProps) {
+export function VisuallyHidden({ asChild = false, className, ...props }: VisuallyHiddenProps) {
+  const Comp = asChild ? Slot : "span"
   return (
-    <span
+    <Comp
       className={cn(
         "absolute w-[1px] h-[1px] p-0 -m-[1px] overflow-hidden clip-rect-0 whitespace-nowrap border-0",
         className,
@@ -14,4 +18,3 @@ export function VisuallyHidden({ className, ...props }: VisuallyHiddenProps) {
     />
   )
 }
-

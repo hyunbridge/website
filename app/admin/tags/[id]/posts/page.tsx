@@ -6,9 +6,9 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Card } from "@/components/ui/card"
 import Link from "next/link"
 
-export default async function AdminTagPostsPage({ params }: { params: { id: string } }) {
+export default async function AdminTagPostsPage({ params }: { params: Promise<{ id: string }> }) {
   try {
-    const tagId = params.id
+    const { id: tagId } = await params
     const { posts, tag } = await getPostsByTagId(tagId, 1, 10, false)
 
     return (
