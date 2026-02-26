@@ -67,7 +67,7 @@ export default async function CVPage() {
 async function CVContentWrapper() {
   try {
     const cv = await getCVData()
-    return <CVContent cv={cv} isDirectAccess={true} />
+    return <CVContent cv={cv} />
   } catch (error) {
     return (
         <ErrorMessage

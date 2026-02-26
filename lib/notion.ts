@@ -1,8 +1,8 @@
 import { cache } from "react"
 import { NotionAPI } from "notion-client"
 
-// Use a server-side only NotionAPI instance
-const notionAPI = new NotionAPI(process.env.NOTION_API_KEY ? { authToken: process.env.NOTION_API_KEY } : {})
+// Public CV page uses unauthenticated Notion access
+const notionAPI = new NotionAPI()
 
 // Page IDs
 const CV_PAGE_ID = process.env.NOTION_CV_PAGE_ID || "" // This is a page ID

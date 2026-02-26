@@ -38,11 +38,8 @@ jobs:
             --build-arg NEXT_PUBLIC_GISCUS_REPO_ID=${{ secrets.NEXT_PUBLIC_GISCUS_REPO_ID }} \
             --build-arg NEXT_PUBLIC_GISCUS_CATEGORY=${{ secrets.NEXT_PUBLIC_GISCUS_CATEGORY }} \
             --build-arg NEXT_PUBLIC_GISCUS_CATEGORY_ID=${{ secrets.NEXT_PUBLIC_GISCUS_CATEGORY_ID }} \
-            --build-arg NEXT_PUBLIC_CDN_URL=${{ secrets.NEXT_PUBLIC_CDN_URL }} \
             --build-arg NEXT_PUBLIC_SITE_URL=${{ secrets.NEXT_PUBLIC_SITE_URL }} \
             --build-arg NEXT_PUBLIC_BASE_URL=${{ secrets.NEXT_PUBLIC_BASE_URL }} \
-            --build-arg NOTION_API_KEY=${{ secrets.NOTION_API_KEY }} \
-            --build-arg NOTION_PROJECTS_DATABASE_ID=${{ secrets.NOTION_PROJECTS_DATABASE_ID }} \
             --build-arg NOTION_CV_PAGE_ID=${{ secrets.NOTION_CV_PAGE_ID }}
 
       - name: Deploy to VM
@@ -59,9 +56,7 @@ jobs:
             docker run -d \
               --name website \
               -p 3000:3000 \
-              -e NOTION_API_KEY=${{ secrets.NOTION_API_KEY }} \
               -e NOTION_CV_PAGE_ID=${{ secrets.NOTION_CV_PAGE_ID }} \
-              -e NOTION_PROJECTS_DATABASE_ID=${{ secrets.NOTION_PROJECTS_DATABASE_ID }} \
               -e PROTECTED_EMAIL=${{ secrets.PROTECTED_EMAIL }} \
               -e CLOUDFLARE_TURNSTILE_SECRET_KEY=${{ secrets.CLOUDFLARE_TURNSTILE_SECRET_KEY }} \
               -e JWT_SECRET_KEY=${{ secrets.JWT_SECRET_KEY }} \
@@ -79,7 +74,6 @@ jobs:
               -e NEXT_PUBLIC_GISCUS_REPO_ID=${{ secrets.NEXT_PUBLIC_GISCUS_REPO_ID }} \
               -e NEXT_PUBLIC_GISCUS_CATEGORY=${{ secrets.NEXT_PUBLIC_GISCUS_CATEGORY }} \
               -e NEXT_PUBLIC_GISCUS_CATEGORY_ID=${{ secrets.NEXT_PUBLIC_GISCUS_CATEGORY_ID }} \
-              -e NEXT_PUBLIC_CDN_URL=${{ secrets.NEXT_PUBLIC_CDN_URL }} \
               -e NEXT_PUBLIC_SITE_URL=${{ secrets.NEXT_PUBLIC_SITE_URL }} \
               -e NEXT_PUBLIC_BASE_URL=${{ secrets.NEXT_PUBLIC_BASE_URL }} \
               --restart=always \

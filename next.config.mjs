@@ -20,10 +20,6 @@ const nextConfig = {
     parallelServerBuildTraces: true,
     parallelServerCompiles: true,
   },
-  env: {
-    // Make the CV page ID available to the client
-    NEXT_NOTION_CV_PAGE_ID: process.env.NOTION_CV_PAGE_ID,
-  },
 }
 
 mergeConfig(nextConfig, userConfig)

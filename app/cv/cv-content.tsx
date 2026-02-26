@@ -5,7 +5,6 @@ import { NotionRenderer } from "react-notion-x"
 import { ErrorMessage } from "@/components/error-message"
 import "react-notion-x/src/styles.css"
 import { useEffect, useState, useRef } from "react"
-import { browserNotionClient } from "@/lib/notion-client-browser"
 import { CVSkeleton } from "./cv-skeleton"
 
 // Import required components for NotionRenderer
@@ -51,36 +50,13 @@ export function formatLastModified(timestamp: number | null): string {
   })
 }
 
-export function CVContent({ cv, isDirectAccess = false }) {
+export function CVContent({ cv }) {
   const [mounted, setMounted] = useState(false)
-  const [clientCv, setClientCv] = useState(cv)
-  const [loading, setLoading] = useState(!isDirectAccess)
-  const [error, setError] = useState<string | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     setMounted(true)
-
-    if (isDirectAccess && cv) return
-
-    async function fetchCVData() {
-      try {
-        setLoading(true)
-        const cvPageId = process.env.NEXT_NOTION_CV_PAGE_ID
-        if (!cvPageId) throw new Error("CV page ID not found")
-        const recordMap = await browserNotionClient.getPage(cvPageId)
-        setClientCv({ pageId: cvPageId, recordMap })
-      } catch (err) {
-        setError("Failed to load CV content. Please try again later.")
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    if (!isDirectAccess) {
-      fetchCVData()
-    }
-  }, [cv, isDirectAccess])
+  }, [])
 
   // Group each Heading and its content until the next Heading or HR into one section
   useEffect(() => {
@@ -128,15 +104,7 @@ export function CVContent({ cv, isDirectAccess = false }) {
   }, [mounted])
 
   const isDarkMode = mounted && document.documentElement.classList.contains("dark")
-  const currentCv = clientCv || cv
-
-  if (loading) {
-    return <CVSkeleton />
-  }
-
-  if (error) {
-    return <ErrorMessage title="Failed to load CV" message={error} />
-  }
+  const currentCv = cv
 
   if (!currentCv || !currentCv.recordMap) {
     return <ErrorMessage title="CV not found" message="The CV content could not be loaded." />
