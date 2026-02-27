@@ -4,7 +4,7 @@ import { getPostsByTagId } from "@/lib/blog-service"
 import { PostList } from "@/components/blog/post-list"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Card } from "@/components/ui/card"
-import Link from "next/link"
+import { BackLink } from "@/components/ui/back-link"
 
 export default async function AdminTagPostsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id: tagId } = await params
@@ -22,9 +22,7 @@ export default async function AdminTagPostsPage({ params }: { params: Promise<{ 
   return (
     <div>
       <div className="mb-8">
-        <Link href="/admin/tags" className="text-sm text-muted-foreground hover:underline">
-          ← Back to all tags
-        </Link>
+        <BackLink href="/admin/tags">Back to all tags</BackLink>
       </div>
 
       <h1 className="text-3xl md:text-4xl font-bold mb-8">

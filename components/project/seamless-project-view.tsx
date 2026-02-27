@@ -5,6 +5,7 @@ import Image from "next/image"
 import { usePathname, useRouter } from "next/navigation"
 import { useAuth } from "@/contexts/auth-context"
 import { BlockNoteEditor } from "./blocknote-editor"
+import { BackLink } from "@/components/ui/back-link"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -570,9 +571,7 @@ export function SeamlessProjectView({ project: initialProject, mode = "view" }: 
             return (
                 <motion.div transition={MORPH_LAYOUT_TRANSITION} className="container max-w-4xl mx-auto py-8 md:py-12">
                     <div className="mb-6">
-                        <Link href="/projects" className="text-sm text-muted-foreground hover:underline">
-                            ← Back to all projects
-                        </Link>
+                        <BackLink href="/projects">Back to all projects</BackLink>
                     </div>
 
                     {project.cover_image && (
@@ -711,12 +710,9 @@ export function SeamlessProjectView({ project: initialProject, mode = "view" }: 
         <motion.div transition={MORPH_LAYOUT_TRANSITION} className="container max-w-4xl mx-auto py-8 md:py-12">
             {/* Back link */}
             <div className="mb-6">
-                <Link
-                    href={mode === "edit" ? "/admin/projects" : "/projects"}
-                    className="text-sm text-muted-foreground hover:underline"
-                >
-                    {mode === "edit" ? "← Back to admin" : "← Back to all projects"}
-                </Link>
+                <BackLink href={mode === "edit" ? "/admin/projects" : "/projects"}>
+                    {mode === "edit" ? "Back to admin" : "Back to all projects"}
+                </BackLink>
             </div>
 
             {/* Author edit toolbar */}

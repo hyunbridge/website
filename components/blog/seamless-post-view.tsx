@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation"
 import { useAuth } from "@/contexts/auth-context"
 import { BlockNoteEditor } from "./blocknote-editor"
 import { Comments } from "./comments"
+import { BackLink } from "@/components/ui/back-link"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -514,9 +515,7 @@ export function SeamlessPostView({ post: initialPost, mode = "view" }: Props) {
             return (
                 <motion.div transition={MORPH_LAYOUT_TRANSITION} className="container max-w-4xl mx-auto py-8 md:py-12">
                     <div className="mb-6">
-                        <Link href="/blog" className="text-sm text-muted-foreground hover:underline">
-                            ← Back to all posts
-                        </Link>
+                        <BackLink href="/blog">Back to all posts</BackLink>
                     </div>
 
                     {post.cover_image && (
@@ -625,12 +624,9 @@ export function SeamlessPostView({ post: initialPost, mode = "view" }: Props) {
         <motion.div transition={MORPH_LAYOUT_TRANSITION} className="container max-w-4xl mx-auto py-8 md:py-12">
             {/* Back link */}
             <div className="mb-6">
-                <Link
-                    href={mode === "edit" ? "/admin/blog/posts" : "/blog"}
-                    className="text-sm text-muted-foreground hover:underline"
-                >
-                    {mode === "edit" ? "← Back to admin" : "← Back to all posts"}
-                </Link>
+                <BackLink href={mode === "edit" ? "/admin/blog/posts" : "/blog"}>
+                    {mode === "edit" ? "Back to admin" : "Back to all posts"}
+                </BackLink>
             </div>
 
             {/* Author edit toolbar */}

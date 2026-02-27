@@ -10,6 +10,7 @@ import { BlockNoteEditor } from "./blocknote-editor"
 import { Comments } from "./comments"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { BackLink } from "@/components/ui/back-link"
 import { StatePanel } from "@/components/ui/state-panel"
 import { GlobeLock } from "lucide-react"
 import { motion } from "framer-motion"
@@ -98,9 +99,7 @@ export function PublicPostView({
   return (
     <motion.div transition={MORPH_LAYOUT_TRANSITION} className="container max-w-4xl mx-auto py-8 md:py-12">
       <div className="mb-6">
-        <Link href="/blog" className="text-sm text-muted-foreground hover:underline">
-          ← Back to all posts
-        </Link>
+        <BackLink href="/blog">Back to all posts</BackLink>
       </div>
 
       {post.cover_image && (

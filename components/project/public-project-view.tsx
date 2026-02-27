@@ -8,6 +8,7 @@ import { format } from "date-fns"
 import type { Project } from "@/lib/project-service"
 import { BlockNoteEditor } from "./blocknote-editor"
 import { Badge } from "@/components/ui/badge"
+import { BackLink } from "@/components/ui/back-link"
 import { Button } from "@/components/ui/button"
 import { Card, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { StatePanel } from "@/components/ui/state-panel"
@@ -98,9 +99,7 @@ export function PublicProjectView({
   return (
     <motion.div transition={MORPH_LAYOUT_TRANSITION} className="container max-w-4xl mx-auto py-8 md:py-12">
       <div className="mb-6">
-        <Link href="/projects" className="text-sm text-muted-foreground hover:underline">
-          ← Back to all projects
-        </Link>
+        <BackLink href="/projects">Back to all projects</BackLink>
       </div>
 
       {project.cover_image && (

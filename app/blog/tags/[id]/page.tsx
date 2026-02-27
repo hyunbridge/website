@@ -3,7 +3,7 @@ import { Suspense } from "react"
 import { getPostsByTagId } from "@/lib/blog-service"
 import { PostList } from "@/components/blog/post-list"
 import { BlogCardListSkeleton } from "@/components/loading/blog-card-skeleton"
-import Link from "next/link"
+import { BackLink } from "@/components/ui/back-link"
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
   try {
@@ -37,9 +37,7 @@ export default async function TagPostsPage({ params }: { params: Promise<{ id: s
   return (
     <div className="container py-8 md:py-12">
       <div className="mb-8">
-        <Link href="/blog/tags" className="text-sm text-muted-foreground hover:underline">
-          ← Back to all tags
-        </Link>
+        <BackLink href="/blog/tags">Back to all tags</BackLink>
       </div>
 
       <h1 className="text-3xl md:text-4xl font-bold mb-8">
