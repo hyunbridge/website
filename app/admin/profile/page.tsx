@@ -12,6 +12,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Skeleton } from "@/components/ui/skeleton"
 import { Loader2, Upload, AlertCircle, RefreshCw } from "lucide-react"
 import { getPresignedUrl, uploadToS3 } from "@/lib/s3-service"
 
@@ -231,8 +232,43 @@ export default function ProfilePage() {
 
   if (authLoading || isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-[50vh]">
-        <Loader2 className="h-8 w-8 animate-spin" />
+      <div className="space-y-6">
+        <Skeleton className="h-10 w-56" />
+
+        <div className="space-y-4">
+          <Skeleton className="h-10 w-48 rounded-md" />
+
+          <Card>
+            <CardHeader>
+              <Skeleton className="h-6 w-40" />
+              <Skeleton className="h-4 w-56 max-w-full" />
+            </CardHeader>
+            <CardContent className="flex flex-col items-center space-y-4">
+              <Skeleton className="h-24 w-24 rounded-full" />
+              <Skeleton className="h-10 w-36 rounded-md" />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <Skeleton className="h-6 w-44" />
+              <Skeleton className="h-4 w-60 max-w-full" />
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-28" />
+                <Skeleton className="h-10 w-full" />
+              </div>
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-20" />
+                <Skeleton className="h-10 w-full" />
+              </div>
+            </CardContent>
+            <CardFooter>
+              <Skeleton className="h-10 w-36" />
+            </CardFooter>
+          </Card>
+        </div>
       </div>
     )
   }
