@@ -10,7 +10,7 @@ type AuthContextType = {
   user: User | null
   session: Session | null
   isLoading: boolean
-  signIn: (email: string, password: string) => Promise<void>
+  signIn: (email: string, password: string, captchaToken?: string) => Promise<void>
   signOut: () => Promise<void>
   logout: () => Promise<void> // Added for compatibility
 }
@@ -62,11 +62,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     getSession()
   }, [])
 
-  const signIn = async (email: string, password: string) => {
+  const signIn = async (email: string, password: string, captchaToken?: string) => {
     try {
       const { error } = await supabase.auth.signInWithPassword({
         email,
         password,
+        options: captchaToken
+          ? {
+              captchaToken,
+            }
+          : undefined,
       })
 
       if (error) {

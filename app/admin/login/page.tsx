@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Turnstile } from "@marsidev/react-turnstile"
 import { Loader2, AlertCircle } from "lucide-react"
 
 export default function AdminLoginPage() {
@@ -20,12 +21,21 @@ export default function AdminLoginPage() {
   const [password, setPassword] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState("")
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null)
+  const [isCaptchaLoaded, setIsCaptchaLoaded] = useState(false)
+
+  const siteKey = process.env.NEXT_PUBLIC_CLOUDFLARE_TURNSTILE_SITE_KEY
 
   useEffect(() => {
     if (user) {
       router.push("/admin")
     }
   }, [user, router])
+
+  useEffect(() => {
+    setCaptchaToken(null)
+    setIsCaptchaLoaded(false)
+  }, [siteKey])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -41,11 +51,21 @@ export default function AdminLoginPage() {
       return
     }
 
+    if (!siteKey) {
+      setError("Captcha verification is not configured")
+      return
+    }
+
+    if (!captchaToken) {
+      setError("Please complete CAPTCHA verification before logging in")
+      return
+    }
+
     setIsSubmitting(true)
     setError("")
 
     try {
-      await signIn(email, password)
+      await signIn(email, password, captchaToken)
       router.push("/admin")
     } catch (err: unknown) {
       console.error("Login error:", err)
@@ -85,6 +105,9 @@ export default function AdminLoginPage() {
             <div className="space-y-2">
               <Skeleton className="h-4 w-16" />
               <Skeleton className="h-10 w-full" />
+            </div>
+            <div className="flex justify-center pt-2">
+              <Skeleton className="h-[65px] w-[300px]" />
             </div>
           </CardContent>
           <CardFooter>
@@ -137,9 +160,38 @@ export default function AdminLoginPage() {
                 required
               />
             </div>
+            <div className="pt-2">
+              <div className="relative mx-auto h-[65px] w-[300px]">
+                {!isCaptchaLoaded && (
+                  <Skeleton className="absolute inset-0 h-full w-full" />
+                )}
+                <Turnstile
+                  className={isCaptchaLoaded ? "" : "invisible"}
+                  siteKey={siteKey || "1x00000000000000000000AA"}
+                  onWidgetLoad={() => {
+                    setIsCaptchaLoaded(true)
+                  }}
+                  onSuccess={(token) => {
+                    setCaptchaToken(token)
+                    setError("")
+                  }}
+                  onExpire={() => {
+                    setCaptchaToken(null)
+                  }}
+                  onError={() => {
+                    setCaptchaToken(null)
+                  }}
+                  options={{
+                    theme: "auto",
+                    action: "admin_login",
+                    refreshExpired: "auto",
+                  }}
+                />
+              </div>
+            </div>
           </CardContent>
           <CardFooter>
-            <Button type="submit" className="w-full" disabled={isSubmitting}>
+            <Button type="submit" className="w-full" disabled={isSubmitting || !captchaToken}>
               {isSubmitting ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
