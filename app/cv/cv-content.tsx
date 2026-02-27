@@ -32,8 +32,12 @@ const Equation = dynamic(() => import("react-notion-x/build/third-party/equation
   ssr: false,
 })
 
+type NotionRecordMap = {
+  block?: Record<string, { value?: { last_edited_time?: string | null } }>
+}
+
 // Helper function to get last modified date
-export function getLastModifiedTimestamp(recordMap: any): string | null {
+export function getLastModifiedTimestamp(recordMap: NotionRecordMap | null | undefined): string | null {
   if (!recordMap || !recordMap.block) return null
   const pageId = Object.keys(recordMap.block)[0]
   return recordMap.block[pageId]?.value?.last_edited_time || null
@@ -55,7 +59,8 @@ export function CVContent({ cv }) {
   const containerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    setMounted(true)
+    const frameId = window.requestAnimationFrame(() => setMounted(true))
+    return () => window.cancelAnimationFrame(frameId)
   }, [])
 
   // Group each Heading and its content until the next Heading or HR into one section

@@ -6,7 +6,7 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ""
 const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || ""
 
 export function getServerSupabase() {
-  return createClient<any>(supabaseUrl, supabaseAnonKey, {
+  return createClient<Database>(supabaseUrl, supabaseAnonKey, {
     auth: {
       persistSession: true,
       autoRefreshToken: true,
@@ -20,7 +20,7 @@ export function getServiceRoleSupabase() {
     throw new Error("Missing SUPABASE_SERVICE_ROLE_KEY")
   }
 
-  return createClient<any>(supabaseUrl, supabaseServiceRoleKey, {
+  return createClient<Database>(supabaseUrl, supabaseServiceRoleKey, {
     auth: {
       persistSession: false,
       autoRefreshToken: false,
@@ -30,7 +30,7 @@ export function getServiceRoleSupabase() {
 }
 
 export function getAuthenticatedSupabase(token: string) {
-  return createClient<any>(supabaseUrl, supabaseAnonKey, {
+  return createClient<Database>(supabaseUrl, supabaseAnonKey, {
     global: {
       headers: {
         Authorization: `Bearer ${token}`,

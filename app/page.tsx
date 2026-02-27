@@ -61,7 +61,7 @@ export default function Home() {
               <div>
                 <h2 className="text-2xl font-bold mb-2">About Me</h2>
                 <p className="text-muted-foreground mb-4">
-                  As a computer science student, I'm passionate about solving real-world problems and continuously improving
+                  As a computer science student, I&apos;m passionate about solving real-world problems and continuously improving
                   my skills. I enjoy working across the full development cycle, from design to deployment, while always
                   seeking opportunities to grow and evolve.
                 </p>
@@ -162,7 +162,7 @@ export default function Home() {
             >
               <div>
                 <h2 className="text-2xl font-bold mb-2">Get in Touch</h2>
-                <p className="text-muted-foreground mb-4">I'd love to hear from you!</p>
+                <p className="text-muted-foreground mb-4">I&apos;d love to hear from you!</p>
               </div>
               <Link
                   href="/contact"

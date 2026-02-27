@@ -17,6 +17,13 @@ type Props = {
     onAutosaveCommitted?: () => void
 }
 
+type ParsedBlockNode = {
+    type?: string
+    text?: string
+    content?: ParsedBlockNode[]
+    children?: ParsedBlockNode[]
+}
+
 // ─── Similarity Engine ──────────────────────────────────────────────
 // Jaccard similarity on word-level bigrams for detecting meaningful changes
 function textSimilarity(a: string, b: string): number {
@@ -45,7 +52,7 @@ function blocksToText(content: string): string {
     try {
         const blocks = JSON.parse(content)
         if (!Array.isArray(blocks)) return content
-        return blocks.map((block: any) => {
+        return blocks.map((block: ParsedBlockNode) => {
             let text = ""
             if (block.content) {
                 for (const item of block.content) {
@@ -53,8 +60,8 @@ function blocksToText(content: string): string {
                 }
             }
             if (block.children?.length) {
-                text += " " + block.children.map((c: any) => {
-                    if (c.content) return c.content.map((i: any) => i.text || "").join("")
+                text += " " + block.children.map((c: ParsedBlockNode) => {
+                    if (c.content) return c.content.map((i: ParsedBlockNode) => i.text || "").join("")
                     return ""
                 }).join(" ")
             }

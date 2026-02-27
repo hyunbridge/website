@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import Image from "next/image"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { format } from "date-fns"
@@ -62,13 +63,16 @@ export function PublicProjectView({
     const intent = getRecentIntent()
     const isMorphArrival = !!intent && intent.kind === "projects-detail" && intent.href === pathname
     if (!isMorphArrival) {
-      setDeferSecondaryReveal(false)
-      return
+      const timer = window.setTimeout(() => setDeferSecondaryReveal(false), 0)
+      return () => window.clearTimeout(timer)
     }
 
-    setDeferSecondaryReveal(true)
-    const timer = window.setTimeout(() => setDeferSecondaryReveal(false), 220)
-    return () => window.clearTimeout(timer)
+    const showTimer = window.setTimeout(() => setDeferSecondaryReveal(true), 0)
+    const hideTimer = window.setTimeout(() => setDeferSecondaryReveal(false), 220)
+    return () => {
+      window.clearTimeout(showTimer)
+      window.clearTimeout(hideTimer)
+    }
   }, [pathname, getRecentIntent])
 
   if (!displayContent) {
@@ -98,7 +102,14 @@ export function PublicProjectView({
           transition={MORPH_LAYOUT_TRANSITION}
           className="mb-8 rounded-2xl overflow-hidden"
         >
-          <img src={project.cover_image} alt={displayTitle} className="w-full h-64 md:h-80 object-cover" />
+          <Image
+            src={project.cover_image}
+            alt={displayTitle}
+            width={1600}
+            height={900}
+            className="w-full h-64 md:h-80 object-cover"
+            unoptimized
+          />
         </motion.div>
       )}
 
@@ -109,7 +120,14 @@ export function PublicProjectView({
       <motion.div className="flex flex-wrap items-center gap-4 mb-8" {...secondaryRevealMotion}>
         <div className="flex items-center gap-2">
           {project.owner?.avatar_url ? (
-            <img src={project.owner.avatar_url} alt={authorName} className="w-8 h-8 rounded-full" />
+            <Image
+              src={project.owner.avatar_url}
+              alt={authorName}
+              width={32}
+              height={32}
+              className="w-8 h-8 rounded-full"
+              unoptimized
+            />
           ) : (
             <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-sm font-medium">
               {authorName[0]?.toUpperCase()}

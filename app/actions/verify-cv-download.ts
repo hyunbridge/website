@@ -42,7 +42,7 @@ export async function verifyTurnstileToken(token: string) {
       verified: data.success,
       error: data.success ? null : "Token verification failed",
     };
-  } catch (error) {
+  } catch {
     return {
       success: false,
       error: "Error occurred during verification",

@@ -1,6 +1,6 @@
 import { supabase } from "@/lib/supabase-client"
 
-const db: any = supabase
+const db = supabase
 
 // ---------------------------------------------------------------------------
 // Types (matching blog conventions)
@@ -83,9 +83,9 @@ export type Tag = {
 }
 
 export type ProjectVersioningState = {
-    item: any
-    currentVersion: any
-    latestVersion: any
+    item: unknown
+    currentVersion: unknown
+    latestVersion: unknown
 }
 
 export type ProjectVersion = {
@@ -152,13 +152,14 @@ async function getAuthorMap(userIds: string[]): Promise<Record<string, { full_na
     if (ids.length === 0) return {}
     const { data, error } = await db.from("secure_profiles").select("id, full_name, avatar_url").in("id", ids)
     if (error || !data) return {}
-    return Object.fromEntries(data.map((row: any) => [row.id, { full_name: row.full_name || "", avatar_url: row.avatar_url }]))
+    return Object.fromEntries(data.map((row) => [row.id, { full_name: row.full_name || "", avatar_url: row.avatar_url }]))
 }
 
-function formatDbError(error: any): string {
+function formatDbError(error: unknown): string {
     if (!error) return "Unknown database error"
     if (typeof error === "string") return error
-    const parts = [error.message, error.details, error.hint, error.code].filter(Boolean)
+    const dbError = error as { message?: string; details?: string; hint?: string; code?: string }
+    const parts = [dbError.message, dbError.details, dbError.hint, dbError.code].filter(Boolean)
     return parts.length > 0 ? parts.join(" | ") : JSON.stringify(error)
 }
 
@@ -198,7 +199,7 @@ function normalizeProjectLinks(value: unknown, projectId: string): ProjectLink[]
     if (!Array.isArray(value)) return []
 
     return value
-        .map((row: any, index) => {
+        .map((row, index) => {
             if (!row || typeof row !== "object") return null
             const label = typeof row.label === "string" ? row.label : ""
             const url = typeof row.url === "string" ? row.url : ""
@@ -213,7 +214,7 @@ function normalizeProjectLinks(value: unknown, projectId: string): ProjectLink[]
             } as ProjectLink
         })
         .filter(Boolean)
-        .sort((a: any, b: any) => a.sort_order - b.sort_order) as ProjectLink[]
+        .sort((a, b) => a.sort_order - b.sort_order) as ProjectLink[]
 }
 
 async function getProjectContentsMap(contentItemIds: string[]): Promise<Record<string, ProjectContentRow>> {
@@ -240,7 +241,7 @@ async function getProjectTagsMap(contentItemIds: string[]): Promise<Record<strin
         .in("content_item_id", ids)
     if (mappingError) throw new Error(`Failed to fetch project tag mappings: ${formatDbError(mappingError)}`)
 
-    const tagIds = Array.from(new Set((mappings || []).map((m: any) => m.tag_id).filter(Boolean)))
+    const tagIds = Array.from(new Set((mappings || []).map((m) => m.tag_id).filter(Boolean)))
     if (tagIds.length === 0) return {}
 
     const { data: tags, error: tagError } = await db
@@ -252,9 +253,10 @@ async function getProjectTagsMap(contentItemIds: string[]): Promise<Record<strin
     const tagMap = Object.fromEntries(((tags || []) as ProjectTag[]).map((tag) => [tag.id, tag]))
     const grouped: Record<string, ProjectTag[]> = {}
     for (const mapping of mappings || []) {
-        const tag = tagMap[(mapping as any).tag_id]
+        const mappingRow = mapping as { tag_id?: string; content_item_id?: string }
+        const tag = tagMap[mappingRow.tag_id || ""]
         if (!tag) continue
-        const contentItemId = (mapping as any).content_item_id
+        const contentItemId = mappingRow.content_item_id || ""
         if (!grouped[contentItemId]) grouped[contentItemId] = []
         grouped[contentItemId].push(tag)
     }
@@ -274,7 +276,7 @@ async function getVersionBodyMap(versionIds: string[]): Promise<Record<string, C
     return Object.fromEntries(((data || []) as ContentVersionRow[]).map((row) => [row.id, normalizeVersionRow(row)]))
 }
 
-async function hydrateProjects(items: any[], versionPointer: "current" | "published" = "current"): Promise<Project[]> {
+async function hydrateProjects(items: Array<Record<string, unknown>>, versionPointer: "current" | "published" = "current"): Promise<Project[]> {
     if (!items.length) return []
 
     const itemIds = items.map((item) => item.id)
@@ -328,7 +330,7 @@ export async function getProjects(onlyPublished = true): Promise<Project[]> {
 
     const projects = await hydrateProjects(data || [], "current")
     // Default sort: manual order first (lower sort_order first)
-    return projects.sort((a: any, b: any) => {
+    return projects.sort((a, b) => {
         if (a.sort_order !== b.sort_order) return a.sort_order - b.sort_order
         return (a.title || "").localeCompare(b.title || "")
     })
@@ -405,7 +407,7 @@ export async function getProjectCount(): Promise<number> {
     return count || 0
 }
 
-function mapToProject(item: any, usePublishedVersion = false, owner?: { full_name: string; avatar_url: string | null }): Project {
+function mapToProject(item: Record<string, unknown>, usePublishedVersion = false, owner?: { full_name: string; avatar_url: string | null }): Project {
     const projectContents = item.project_contents?.[0] || {}
 
     let content = "[]"
@@ -421,7 +423,7 @@ function mapToProject(item: any, usePublishedVersion = false, owner?: { full_nam
 
     const tags = item.tags
         ? item.tags
-            .map((t: any) => t.content_tags)
+            .map((t) => t.content_tags)
             .filter(Boolean)
         : []
 
@@ -540,7 +542,7 @@ export async function updateProject(
     const { data: item, error: itemError } = await db.from("content_items").select("*").eq("id", id).single()
     if (itemError || !item) throw itemError || new Error("Project not found")
 
-    let currentVersion: any = null
+    let currentVersion: unknown = null
     if (item.current_version_id) {
         const { data, error } = await db.from("content_versions").select("*").eq("id", item.current_version_id).single()
         if (error) throw error
@@ -552,7 +554,7 @@ export async function updateProject(
     const mergedContent = updates.content ?? getVersionContent(currentVersion) ?? "[]"
 
     // Prepare updates
-    const itemUpdates: any = { updated_at: now }
+    const itemUpdates: Record<string, unknown> = { updated_at: now }
     if (updates.slug !== undefined) itemUpdates.slug = updates.slug
     if (updates.cover_image !== undefined) itemUpdates.cover_image = updates.cover_image
     if (updates.is_published !== undefined) {
@@ -563,7 +565,7 @@ export async function updateProject(
     itemUpdates.summary = mergedSummary
 
     // Update project-specific fields
-    const pcUpdates: any = {}
+    const pcUpdates: Record<string, unknown> = {}
     if (updates.sort_order !== undefined) pcUpdates.sort_order = updates.sort_order
     if (links !== undefined) {
         pcUpdates.links = links.map((link, index) => ({
@@ -833,7 +835,7 @@ export async function updateProjectVersionSnapshot(
     versionId: string,
     updates: { title?: string; content?: string; summary?: string; change_description?: string | null },
 ) {
-    const payload: any = {}
+    const payload: Record<string, unknown> = {}
     if (updates.title !== undefined) payload.title = updates.title
     if (updates.summary !== undefined) payload.summary = updates.summary
     if (updates.change_description !== undefined) payload.change_description = updates.change_description
@@ -955,9 +957,9 @@ export async function getProjectVersions(projectId: string): Promise<ProjectVers
     }
 
     const rows = data || []
-    const authorMap = await getAuthorMap(rows.map((r: any) => r.created_by).filter(Boolean))
+    const authorMap = await getAuthorMap(rows.map((r) => r.created_by).filter(Boolean))
 
-    return rows.map((rawVersion: any) => {
+    return rows.map((rawVersion) => {
         const version = normalizeVersionRow(rawVersion)
         return {
             id: version.id,
@@ -1102,7 +1104,7 @@ function extractTrackedAssetKeysFromBlocknoteJson(content: string): string[] {
     try {
         const blocks = JSON.parse(content)
         const urls: string[] = []
-        const walk = (node: any) => {
+        const walk = (node: unknown) => {
             if (!node) return
             if (Array.isArray(node)) {
                 node.forEach(walk)
@@ -1218,7 +1220,7 @@ async function enqueueOrphanedPostAssets(postId: string) {
         .in("asset_id", assetRows.map((a) => a.id))
     if (refsError) throw refsError
 
-    const referencedAssetIds = new Set((refs || []).map((r: any) => r.asset_id))
+    const referencedAssetIds = new Set((refs || []).map((r) => r.asset_id))
     const orphaned = assetRows.filter((a) => !referencedAssetIds.has(a.id))
     if (orphaned.length === 0) return []
 
@@ -1231,7 +1233,7 @@ async function syncEmbeddedAssetRefsForVersion(postId: string, versionId: string
     const desiredAssets =
         desiredKeys.length > 0
             ? await db.from("assets").select("id, object_key").in("object_key", desiredKeys)
-            : ({ data: [], error: null } as any)
+            : ({ data: [], error: null } as { data: Array<{ id: string; object_key: string }>; error: null })
 
     if (desiredAssets.error) throw desiredAssets.error
     const desiredRows = (desiredAssets.data || []) as Array<{ id: string; object_key: string }>

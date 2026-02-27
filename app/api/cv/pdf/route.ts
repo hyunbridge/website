@@ -105,7 +105,7 @@ export async function GET(request: Request) {
     } finally {
       await browser.close()
     }
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       { error: "Failed to generate PDF" },
       { status: 500 }

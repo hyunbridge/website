@@ -1,7 +1,7 @@
 "use client"
 
 import { ProtectedEmail } from "@/components/protected-email"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Github, Linkedin, Copy, Check } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useState } from "react"
@@ -41,7 +41,7 @@ export default function ContactPageClient() {
         </Card>
       </div>
     </div>
-  );
+  )
 }
 
 function SocialMediaLink({ icon, name, url }) {
@@ -71,4 +71,3 @@ function SocialMediaLink({ icon, name, url }) {
     </div>
   )
 }
-

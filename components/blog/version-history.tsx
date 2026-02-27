@@ -14,7 +14,6 @@ import {
   RotateCcw,
   Eye,
   GitCompareArrows,
-  X,
   ChevronRight,
   Clock,
   Plus,
@@ -63,11 +62,20 @@ type DiffLine = {
   content: string
 }
 
+type ParsedBlockNode = {
+  type?: string
+  text?: string
+  content?: ParsedBlockNode[]
+  children?: ParsedBlockNode[]
+  props?: {
+    level?: number
+    checked?: boolean
+  }
+}
+
 function computeTextDiff(oldText: string, newText: string): DiffLine[] {
   const oldLines = oldText.split("\n")
   const newLines = newText.split("\n")
-  const diff: DiffLine[] = []
-
   // Simple LCS-based diff
   const m = oldLines.length
   const n = newLines.length
@@ -107,7 +115,7 @@ function blocksToPlainText(content: string): string {
     const blocks = JSON.parse(content)
     if (!Array.isArray(blocks)) return content
 
-    function extractText(block: any): string {
+    function extractText(block: ParsedBlockNode): string {
       let text = ""
       if (block.content) {
         for (const item of block.content) {
@@ -129,7 +137,7 @@ function blocksToPlainText(content: string): string {
     }
 
     return blocks
-      .map((block: any) => {
+      .map((block: ParsedBlockNode) => {
         const prefix =
           block.type === "heading" ? `${"#".repeat(block.props?.level || 1)} ` :
             block.type === "bulletListItem" ? "• " :
@@ -561,7 +569,7 @@ export function VersionHistory({ postId, publishedVersionId, onVersionRestored }
               </p>
               {selectedVersion.change_description && (
                 <p className="text-xs text-muted-foreground italic">
-                  "{selectedVersion.change_description}"
+                  &quot;{selectedVersion.change_description}&quot;
                 </p>
               )}
             </div>

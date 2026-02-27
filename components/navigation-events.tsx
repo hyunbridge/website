@@ -28,9 +28,10 @@ function NavigationEventsContent() {
   const [isNavigating, setIsNavigating] = useState(false)
 
   useEffect(() => {
-    // When the component mounts, we're not navigating
-    setIsNavigating(false)
     NProgress.done()
+    const resetNavigationTimeout = window.setTimeout(() => {
+      setIsNavigating(false)
+    }, 0)
 
     // Create a timeout to detect slow navigations
     const timeout = setTimeout(() => {
@@ -40,6 +41,7 @@ function NavigationEventsContent() {
     }, 100)
 
     return () => {
+      clearTimeout(resetNavigationTimeout)
       clearTimeout(timeout)
     }
   }, [pathname, searchParams, isNavigating])
@@ -65,4 +67,3 @@ function NavigationEventsContent() {
 
   return null
 }
-

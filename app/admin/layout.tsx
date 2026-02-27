@@ -1,6 +1,7 @@
 "use client"
 
 import type React from "react"
+import type { LucideIcon } from "lucide-react"
 
 import { useEffect, useState } from "react"
 import { useRouter, usePathname } from "next/navigation"
@@ -107,7 +108,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
   type NavItemType = {
     name: string
     href: string
-    icon: any
+    icon: LucideIcon
     subItems?: { name: string; href: string }[]
   }
 

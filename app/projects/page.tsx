@@ -2,8 +2,6 @@ import { Suspense } from "react"
 import { getProjects } from "@/lib/project-service"
 import { ProjectList } from "./project-list"
 import { ProjectSkeleton } from "@/components/skeletons"
-import { ErrorBoundary } from "@/components/error-boundary"
-import { ErrorMessage } from "@/components/error-message"
 
 export const dynamic = "force-dynamic"
 

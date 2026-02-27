@@ -93,7 +93,7 @@ export async function checkEmailVerification(
       verified,
       email: PROTECTED_EMAIL,
     };
-  } catch (error) {
+  } catch {
     return {
       success: false,
     };

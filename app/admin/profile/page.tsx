@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useAuth } from "@/contexts/auth-context"
 import { supabase } from "@/lib/supabase-client"
 import { Button } from "@/components/ui/button"
@@ -12,7 +12,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Loader2, Upload, Check, X, AlertCircle, RefreshCw } from "lucide-react"
+import { Loader2, Upload, AlertCircle, RefreshCw } from "lucide-react"
 import { getPresignedUrl, uploadToS3 } from "@/lib/s3-service"
 
 export default function ProfilePage() {
@@ -24,7 +24,7 @@ export default function ProfilePage() {
     avatar_url: string | null
   } | null>(null)
   const [fullName, setFullName] = useState("")
-  const [currentPassword, setCurrentPassword] = useState("")
+  const [, setCurrentPassword] = useState("")
   const [newPassword, setNewPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
   const [avatarFile, setAvatarFile] = useState<File | null>(null)
@@ -41,7 +41,7 @@ export default function ProfilePage() {
     setErrorMessage("")
   }
 
-  const fetchProfile = async () => {
+  const fetchProfile = useCallback(async () => {
     if (!user) return
 
     setProfileLoadError("")
@@ -97,13 +97,13 @@ export default function ProfilePage() {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [user])
 
   useEffect(() => {
     if (user) {
       fetchProfile()
     }
-  }, [user])
+  }, [user, fetchProfile])
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -184,9 +184,9 @@ export default function ProfilePage() {
       setAvatarPreview(null)
 
       setSuccessMessage("Profile updated successfully")
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error updating profile:", error)
-      setErrorMessage(error.message || "Failed to update profile. Please try again.")
+      setErrorMessage(error instanceof Error ? error.message : "Failed to update profile. Please try again.")
     } finally {
       setIsUpdatingProfile(false)
     }
@@ -221,9 +221,9 @@ export default function ProfilePage() {
       setNewPassword("")
       setConfirmPassword("")
       setSuccessMessage("Password changed successfully")
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error changing password:", error)
-      setErrorMessage(error.message || "Failed to change password. Please try again.")
+      setErrorMessage(error instanceof Error ? error.message : "Failed to change password. Please try again.")
     } finally {
       setIsChangingPassword(false)
     }

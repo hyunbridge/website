@@ -46,19 +46,19 @@ export default function AdminLoginPage() {
     try {
       await signIn(email, password)
       router.push("/admin")
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Login error:", err)
       
       // Provide more specific error messages
       let errorMessage = "Login failed. Please try again."
       
-      if (err?.message?.includes("Invalid login credentials")) {
+      if (err instanceof Error && err.message.includes("Invalid login credentials")) {
         errorMessage = "Invalid email or password. Please check your credentials and try again."
-      } else if (err?.message?.includes("Email not confirmed")) {
+      } else if (err instanceof Error && err.message.includes("Email not confirmed")) {
         errorMessage = "Please check your email and confirm your account before logging in."
-      } else if (err?.message?.includes("Too many requests")) {
+      } else if (err instanceof Error && err.message.includes("Too many requests")) {
         errorMessage = "Too many login attempts. Please wait a moment before trying again."
-      } else if (err?.message) {
+      } else if (err instanceof Error && err.message) {
         errorMessage = err.message
       }
       

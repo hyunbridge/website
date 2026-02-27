@@ -23,7 +23,6 @@ import {
     type DragEndEvent,
     DragOverlay,
     type DragStartEvent,
-    type DragCancelEvent,
 } from "@dnd-kit/core"
 import {
     arrayMove,
@@ -102,7 +101,7 @@ export default function AdminProjectsPage() {
         setActiveId(event.active.id as string)
     }
 
-    const handleDragCancel = (_event: DragCancelEvent) => {
+    const handleDragCancel = () => {
         setActiveId(null)
     }
 

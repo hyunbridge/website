@@ -27,7 +27,7 @@ export async function generateMetadata({ params }: Props) {
       title: `${project.title} | Hyungyo Seo`,
       description: project.summary || project.title,
     }
-  } catch (error) {
+  } catch {
     return {
       title: "Project | Hyungyo Seo",
       description: "View project details",
@@ -57,14 +57,17 @@ export default async function ProjectPage({ params }: Props) {
 }
 
 async function ProjectDetailWrapper({ slug }: { slug: string }) {
+  let project: Awaited<ReturnType<typeof getProjectBySlug>> = null
+  let publishedSnapshot: Awaited<ReturnType<typeof getProjectPublishedVersion>> | null = null
+  let errorMessage: string | null = null
+
   try {
-    const project = await getProjectBySlug(slug)
+    project = await getProjectBySlug(slug)
 
     if (!project) {
       notFound()
     }
 
-    let publishedSnapshot = null
     if (project.is_published && project.published_version_id) {
       try {
         publishedSnapshot = await getProjectPublishedVersion(project.published_version_id)
@@ -72,14 +75,17 @@ async function ProjectDetailWrapper({ slug }: { slug: string }) {
         publishedSnapshot = null
       }
     }
-
-    return <PublicProjectView project={project} publishedSnapshot={publishedSnapshot} />
   } catch (error) {
-    return (
-      <ErrorMessage
-        title="Failed to load project"
-        message={error instanceof Error ? error.message : "An unknown error occurred"}
-      />
-    )
+    errorMessage = error instanceof Error ? error.message : "An unknown error occurred"
   }
+
+  if (errorMessage) {
+    return <ErrorMessage title="Failed to load project" message={errorMessage} />
+  }
+
+  if (!project) {
+    notFound()
+  }
+
+  return <PublicProjectView project={project} publishedSnapshot={publishedSnapshot} />
 }

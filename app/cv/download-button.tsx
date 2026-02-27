@@ -75,7 +75,7 @@ export function DownloadButton({ className = "" }) {
         title: "Success",
         description: "PDF downloaded successfully",
       })
-    } catch (error) {
+    } catch {
       toast({
         title: "Error",
         description: "Failed to generate or download the PDF. Please try again.",

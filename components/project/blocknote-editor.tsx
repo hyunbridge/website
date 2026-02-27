@@ -1,6 +1,7 @@
 "use client"
 
 import dynamic from "next/dynamic"
+import type { Block } from "@blocknote/core"
 import { Skeleton } from "@/components/ui/skeleton"
 
 // BlockNote requires browser APIs — must be loaded client-side only
@@ -19,10 +20,10 @@ const BlockNoteInner = dynamic(() => import("./blocknote-inner"), {
 })
 
 export type BlockNoteEditorProps = {
-    initialContent?: any // BlockNote Block[] JSON
+    initialContent?: Block[]
     editable?: boolean
     projectId?: string
-    onChange?: (blocks: any) => void
+    onChange?: (blocks: Block[]) => void
     onSaveStatusChange?: (status: "idle" | "saving" | "saved" | "error") => void
     onAutosaveCommitted?: () => void
 }

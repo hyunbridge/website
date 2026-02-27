@@ -7,28 +7,34 @@ import { Card } from "@/components/ui/card"
 import Link from "next/link"
 
 export default async function AdminTagPostsPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id: tagId } = await params
+
+  let posts: Awaited<ReturnType<typeof getPostsByTagId>>["posts"]
+  let tag: Awaited<ReturnType<typeof getPostsByTagId>>["tag"]
+
   try {
-    const { id: tagId } = await params
-    const { posts, tag } = await getPostsByTagId(tagId, 1, 10, false)
-
-    return (
-      <div>
-        <div className="flex flex-col mb-8">
-          <h1 className="text-3xl font-bold">Posts tagged with "{tag.name}"</h1>
-          <Link href="/admin/tags" className="text-sm text-muted-foreground hover:underline mt-2">
-            ← Back to all tags
-          </Link>
-        </div>
-
-        <Suspense fallback={<LoadingSkeleton />}>
-          <PostList initialPosts={posts} isAdmin />
-        </Suspense>
-      </div>
-    )
+    ;({ posts, tag } = await getPostsByTagId(tagId, 1, 10, false))
   } catch (error) {
     console.error("Error fetching posts by tag ID:", error)
     notFound()
   }
+
+  return (
+    <div>
+      <div className="flex flex-col mb-8">
+        <h1 className="text-3xl font-bold">
+          Posts tagged with &quot;{tag.name}&quot;
+        </h1>
+        <Link href="/admin/tags" className="text-sm text-muted-foreground hover:underline mt-2">
+          ← Back to all tags
+        </Link>
+      </div>
+
+      <Suspense fallback={<LoadingSkeleton />}>
+        <PostList initialPosts={posts} isAdmin />
+      </Suspense>
+    </div>
+  )
 }
 
 function LoadingSkeleton() {

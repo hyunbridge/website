@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback, useRef, useMemo } from "react"
+import Image from "next/image"
 import { usePathname, useRouter } from "next/navigation"
 import { useAuth } from "@/contexts/auth-context"
 import { BlockNoteEditor } from "./blocknote-editor"
@@ -124,7 +125,7 @@ export function SeamlessProjectView({ project: initialProject, mode = "view" }: 
 
     // Fetch published version content for readers and draft-vs-published comparison in edit mode
     useEffect(() => {
-        const pvId = (project as any).published_version_id
+        const pvId = project.published_version_id
         if (!pvId || !project.is_published) {
             setPublishedVersionLoading(false)
             setPublishedVersion(null)
@@ -331,7 +332,7 @@ export function SeamlessProjectView({ project: initialProject, mode = "view" }: 
             const { published_at: now } = await publishProject(project.id, versionId)
 
             setIsPublished(true)
-            setProject((prev) => ({ ...prev, is_published: true, published_at: now, published_version_id: versionId } as any))
+            setProject((prev) => ({ ...prev, is_published: true, published_at: now, published_version_id: versionId }))
             setPublishedVersion((prev) => ({
                 title,
                 content: currentContentRef.current || prev?.content || "[]",
@@ -377,7 +378,7 @@ export function SeamlessProjectView({ project: initialProject, mode = "view" }: 
         try {
             await unpublishProject(project.id)
             setIsPublished(false)
-            setProject((prev) => ({ ...prev, is_published: false, published_at: null, published_version_id: null } as any))
+            setProject((prev) => ({ ...prev, is_published: false, published_at: null, published_version_id: null }))
             setSaveStatus("saved")
         } catch {
             setSaveStatus("error")
@@ -579,10 +580,13 @@ export function SeamlessProjectView({ project: initialProject, mode = "view" }: 
                             transition={MORPH_LAYOUT_TRANSITION}
                             className="mb-8 rounded-2xl overflow-hidden relative"
                         >
-                            <img
+                            <Image
                                 src={project.cover_image}
                                 alt={displayTitle}
+                                width={1600}
+                                height={900}
                                 className="w-full h-64 md:h-80 object-cover"
+                                unoptimized
                             />
                             <div className="absolute inset-0 bg-background/15" />
                         </motion.div>
@@ -595,10 +599,13 @@ export function SeamlessProjectView({ project: initialProject, mode = "view" }: 
                     <div className="flex flex-wrap items-center gap-4 mb-8">
                         <div className="flex items-center gap-2">
                             {project.owner?.avatar_url ? (
-                                <img
+                                <Image
                                     src={project.owner.avatar_url}
                                     alt={authorName}
+                                    width={32}
+                                    height={32}
                                     className="w-8 h-8 rounded-full"
+                                    unoptimized
                                 />
                             ) : (
                                 <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-sm font-medium">
@@ -877,7 +884,7 @@ export function SeamlessProjectView({ project: initialProject, mode = "view" }: 
                 <div className="mb-6">
                     <VersionHistory
                         projectId={project.id}
-                        publishedVersionId={(project as any).published_version_id || null}
+                        publishedVersionId={project.published_version_id || null}
                         onVersionRestored={() => {
                             setShowHistory(false)
                             window.location.reload()
@@ -893,10 +900,13 @@ export function SeamlessProjectView({ project: initialProject, mode = "view" }: 
                     transition={MORPH_LAYOUT_TRANSITION}
                     className="mb-8 rounded-2xl overflow-hidden"
                 >
-                    <img
+                    <Image
                         src={project.cover_image}
                         alt={title}
+                        width={1600}
+                        height={900}
                         className="w-full h-64 md:h-80 object-cover"
+                        unoptimized
                     />
                 </motion.div>
             )}
@@ -920,10 +930,13 @@ export function SeamlessProjectView({ project: initialProject, mode = "view" }: 
             <motion.div className="flex flex-wrap items-center gap-4 mb-8" {...secondaryRevealMotion}>
                 <div className="flex items-center gap-2">
                     {project.owner?.avatar_url ? (
-                        <img
+                        <Image
                             src={project.owner.avatar_url}
                             alt={authorName}
+                            width={32}
+                            height={32}
                             className="w-8 h-8 rounded-full"
+                            unoptimized
                         />
                     ) : (
                         <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-sm font-medium">

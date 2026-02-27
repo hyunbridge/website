@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Pencil, Trash2 } from "lucide-react"
+import { Pencil } from "lucide-react"
 import { updateTag, deleteTag, type Tag } from "@/lib/blog-service"
 import { toast } from "@/hooks/use-toast"
 
@@ -31,7 +31,6 @@ export function TagList({
   const [editingTag, setEditingTag] = useState<Tag | null>(null)
   const [tagName, setTagName] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [isDeleting, setIsDeleting] = useState(false)
   const router = useRouter()
 
   const handleEditClick = (tag: Tag, e: React.MouseEvent) => {
@@ -78,7 +77,6 @@ export function TagList({
     if (!editingTag) return
 
     try {
-      setIsDeleting(true)
       await deleteTag(editingTag.id)
       toast({
         title: "Tag deleted",
@@ -94,7 +92,6 @@ export function TagList({
         variant: "destructive",
       })
     } finally {
-      setIsDeleting(false)
     }
   }
 

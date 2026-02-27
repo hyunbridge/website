@@ -1,6 +1,6 @@
 import { supabase } from "@/lib/supabase-client"
 
-const db: any = supabase
+const db = supabase
 
 export type Post = {
   id: string
@@ -198,7 +198,7 @@ async function getAuthorMap(ownerIds: string[]) {
     return {}
   }
 
-  return Object.fromEntries(data.map((row: any) => [row.id, { full_name: row.full_name || "", avatar_url: row.avatar_url }]))
+  return Object.fromEntries(data.map((row) => [row.id, { full_name: row.full_name || "", avatar_url: row.avatar_url }]))
 }
 
 async function getTagsByContentIds(contentIds: string[]) {
@@ -215,14 +215,14 @@ async function getTagsByContentIds(contentIds: string[]) {
     return {}
   }
 
-  const tagIds = Array.from(new Set(data.map((r: any) => r.tag_id)))
+  const tagIds = Array.from(new Set(data.map((r) => r.tag_id)))
   const { data: tags, error: tagsError } = await db.from("content_tags").select("id, name, slug").in("id", tagIds)
   if (tagsError || !tags) {
     if (tagsError) console.error("Error fetching tags:", tagsError)
     return {}
   }
 
-  const tagMap = Object.fromEntries(tags.map((t: any) => [t.id, t]))
+  const tagMap = Object.fromEntries(tags.map((t) => [t.id, t]))
   const grouped: Record<string, Tag[]> = {}
   for (const row of data) {
     const tag = tagMap[row.tag_id]
@@ -247,7 +247,7 @@ async function getVersionByIds(versionIds: string[]) {
     return {}
   }
 
-  return Object.fromEntries(data.map((v: any) => [v.id, normalizeVersionRow(v)]))
+  return Object.fromEntries(data.map((v) => [v.id, normalizeVersionRow(v)]))
 }
 
 function mapItemToPost(
@@ -284,7 +284,7 @@ async function getPostContentSettingsMap(contentIds: string[]) {
     if (error) console.error("Error fetching post settings:", error)
     return {}
   }
-  return Object.fromEntries(data.map((r: any) => [r.content_item_id, { enable_comments: r.enable_comments !== false }]))
+  return Object.fromEntries(data.map((r) => [r.content_item_id, { enable_comments: r.enable_comments !== false }]))
 }
 
 async function hydratePosts(items: ContentItemRow[]): Promise<Post[]> {
@@ -334,7 +334,7 @@ export async function getRecentPosts(limit = 5): Promise<RecentPostSummary[]> {
     return []
   }
 
-  return (data || []).map((row: any) => ({
+  return (data || []).map((row) => ({
     id: row.id,
     title: row.title,
     slug: row.slug,
@@ -419,7 +419,7 @@ export async function getPostsByTagId(tagId: string, page = 1, pageSize = 10, on
 
   if (mapError) throw mapError
 
-  const ids = (mappings || []).map((m: any) => m.content_item_id)
+  const ids = (mappings || []).map((m) => m.content_item_id)
   if (ids.length === 0) return { tag: tagData as Tag, posts: [] as Post[] }
 
   let query = db
@@ -518,7 +518,7 @@ export async function createPost(
 
   if (versionError || !version) throw versionError || new Error("Failed to create initial version")
 
-  const itemUpdate: any = {
+  const itemUpdate: Record<string, unknown> = {
     current_version_id: version.id,
     updated_at: now,
   }
@@ -536,7 +536,7 @@ export async function createPost(
   return (await getPostById(item.id)) as Post
 }
 
-export async function createDraftPostWithClient(client: any, userId: string, slug?: string) {
+export async function createDraftPostWithClient(client: typeof db, userId: string, slug?: string) {
   const now = new Date().toISOString()
   const draftSlug = slug || `untitled-${Date.now().toString(36)}`
 
@@ -604,7 +604,7 @@ export async function updatePost(
   const { data: item, error: itemError } = await db.from("content_items").select("*").eq("id", id).single()
   if (itemError || !item) throw itemError || new Error("Post not found")
 
-  let currentVersion: any = null
+  let currentVersion: unknown = null
   if (item.current_version_id) {
     const { data, error } = await db.from("content_versions").select("*").eq("id", item.current_version_id).single()
     if (error) throw error
@@ -615,7 +615,7 @@ export async function updatePost(
   const mergedSummary = post.summary ?? currentVersion?.summary ?? item.summary ?? ""
   const mergedContent = post.content ?? getVersionContent(currentVersion) ?? "[]"
 
-  const itemUpdates: any = { updated_at: now }
+  const itemUpdates: Record<string, unknown> = { updated_at: now }
   if (post.slug !== undefined) itemUpdates.slug = post.slug
   if (post.cover_image !== undefined) itemUpdates.cover_image = post.cover_image
   if (post.author_id !== undefined) itemUpdates.owner_id = post.author_id
@@ -743,7 +743,7 @@ export async function updatePostVersionSnapshot(
   versionId: string,
   updates: { title?: string; content?: string; summary?: string; change_description?: string | null },
 ) {
-  const payload: any = {}
+  const payload: Record<string, unknown> = {}
   if (updates.title !== undefined) payload.title = updates.title
   if (updates.summary !== undefined) payload.summary = updates.summary
   if (updates.change_description !== undefined) payload.change_description = updates.change_description
@@ -950,7 +950,7 @@ function extractTrackedAssetKeysFromBlocknoteJson(content: string): string[] {
   try {
     const blocks = JSON.parse(content)
     const urls: string[] = []
-    const walk = (node: any) => {
+    const walk = (node: unknown) => {
       if (!node) return
       if (Array.isArray(node)) {
         node.forEach(walk)
@@ -1066,7 +1066,7 @@ async function enqueueOrphanedPostAssets(postId: string) {
     .in("asset_id", assetRows.map((a) => a.id))
   if (refsError) throw refsError
 
-  const referencedAssetIds = new Set((refs || []).map((r: any) => r.asset_id))
+  const referencedAssetIds = new Set((refs || []).map((r) => r.asset_id))
   const orphaned = assetRows.filter((a) => !referencedAssetIds.has(a.id))
   if (orphaned.length === 0) return []
 
@@ -1079,7 +1079,7 @@ async function syncEmbeddedAssetRefsForVersion(postId: string, versionId: string
   const desiredAssets =
     desiredKeys.length > 0
       ? await db.from("assets").select("id, object_key").in("object_key", desiredKeys)
-      : ({ data: [], error: null } as any)
+      : ({ data: [], error: null } as { data: Array<{ id: string; object_key: string }>; error: null })
 
   if (desiredAssets.error) throw desiredAssets.error
   const desiredRows = (desiredAssets.data || []) as Array<{ id: string; object_key: string }>
@@ -1217,9 +1217,9 @@ export async function getPostVersions(postId: string): Promise<PostVersion[]> {
   }
 
   const rows = data || []
-  const authorMap = await getAuthorMap(rows.map((r: any) => r.created_by).filter(Boolean))
+  const authorMap = await getAuthorMap(rows.map((r) => r.created_by).filter(Boolean))
 
-  return rows.map((rawVersion: any) => {
+  return rows.map((rawVersion) => {
     const version = normalizeVersionRow(rawVersion)
     return {
       id: version.id,

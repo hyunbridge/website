@@ -34,9 +34,15 @@ export function RouteTransitionProvider({ children }: { children: React.ReactNod
   }, [])
 
   useEffect(() => {
+    const queueStateUpdate = (callback: () => void) => {
+      queueMicrotask(callback)
+    }
+
     if (pathname === displayPathname) {
       if (!isFrozenRef.current) {
-        setDisplayChildren((prev) => (prev === children ? prev : children))
+        queueStateUpdate(() => {
+          setDisplayChildren((prev) => (prev === children ? prev : children))
+        })
       } else {
         pendingRef.current = { pathname, children }
       }
@@ -53,8 +59,10 @@ export function RouteTransitionProvider({ children }: { children: React.ReactNod
       }
       isFrozenRef.current = false
       pendingRef.current = null
-      setDisplayPathname(pathname)
-      setDisplayChildren(children)
+      queueStateUpdate(() => {
+        setDisplayPathname(pathname)
+        setDisplayChildren(children)
+      })
       clearIntent()
       return
     }

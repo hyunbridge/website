@@ -22,18 +22,31 @@ export function ProtectedEmail() {
 
   // Check if user is already verified when component mounts
   useEffect(() => {
-    const token = localStorage.getItem("email-verification-token");
-    if (token) {
-      setLoading(true);
-      checkEmailVerification(token).then((result) => {
-        if (result.success && result.verified) {
-          setEmail(result.email || "");
+    let cancelled = false;
+
+    const run = async () => {
+      const token = localStorage.getItem("email-verification-token");
+      if (!token) {
+        if (!cancelled) {
+          setLoading(false);
         }
-        setLoading(false);
-      });
-    } else {
+        return;
+      }
+
+      const result = await checkEmailVerification(token);
+      if (cancelled) return;
+
+      if (result.success && result.verified) {
+        setEmail(result.email || "");
+      }
       setLoading(false);
-    }
+    };
+
+    void run();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   // Handle Turnstile verification

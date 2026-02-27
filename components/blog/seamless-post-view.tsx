@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback, useRef, useMemo } from "react"
+import Image from "next/image"
 import { usePathname, useRouter } from "next/navigation"
 import { useAuth } from "@/contexts/auth-context"
 import { BlockNoteEditor } from "./blocknote-editor"
@@ -14,7 +15,6 @@ import {
     Check,
     Loader2,
     AlertCircle,
-    Globe,
     GlobeLock,
     Tag as TagIcon,
     ImageIcon,
@@ -119,7 +119,7 @@ export function SeamlessPostView({ post: initialPost, mode = "view" }: Props) {
 
     // Fetch published version content for readers and draft-vs-published comparison in edit mode
     useEffect(() => {
-        const pvId = (post as any).published_version_id
+        const pvId = post.published_version_id
         if (!pvId || !post.is_published) {
             setPublishedVersionLoading(false)
             setPublishedVersion(null)
@@ -324,7 +324,7 @@ export function SeamlessPostView({ post: initialPost, mode = "view" }: Props) {
             const { published_at: now } = await publishPost(post.id, versionId)
 
             setIsPublished(true)
-            setPost((prev) => ({ ...prev, is_published: true, published_at: now, published_version_id: versionId } as any))
+            setPost((prev) => ({ ...prev, is_published: true, published_at: now, published_version_id: versionId }))
             setPublishedVersion((prev) => ({
                 title,
                 content: currentContentRef.current || prev?.content || "[]",
@@ -370,7 +370,7 @@ export function SeamlessPostView({ post: initialPost, mode = "view" }: Props) {
         try {
             await unpublishPost(post.id)
             setIsPublished(false)
-            setPost((prev) => ({ ...prev, is_published: false, published_at: null, published_version_id: null } as any))
+            setPost((prev) => ({ ...prev, is_published: false, published_at: null, published_version_id: null }))
             setSaveStatus("saved")
         } catch {
             setSaveStatus("error")
@@ -524,10 +524,13 @@ export function SeamlessPostView({ post: initialPost, mode = "view" }: Props) {
                             transition={MORPH_LAYOUT_TRANSITION}
                             className="mb-8 rounded-2xl overflow-hidden relative"
                         >
-                            <img
+                            <Image
                                 src={post.cover_image}
                                 alt={displayTitle}
+                                width={1600}
+                                height={900}
                                 className="w-full h-64 md:h-80 object-cover"
+                                unoptimized
                             />
                             <div className="absolute inset-0 bg-background/15" />
                         </motion.div>
@@ -540,10 +543,13 @@ export function SeamlessPostView({ post: initialPost, mode = "view" }: Props) {
                     <div className="flex flex-wrap items-center gap-4 mb-8">
                         <div className="flex items-center gap-2">
                             {post.author?.avatar_url ? (
-                                <img
+                                <Image
                                     src={post.author.avatar_url}
                                     alt={authorName}
+                                    width={32}
+                                    height={32}
                                     className="w-8 h-8 rounded-full"
+                                    unoptimized
                                 />
                             ) : (
                                 <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-sm font-medium">
@@ -792,7 +798,7 @@ export function SeamlessPostView({ post: initialPost, mode = "view" }: Props) {
                 <div className="mb-6">
                     <VersionHistory
                         postId={post.id}
-                        publishedVersionId={(post as any).published_version_id || null}
+                        publishedVersionId={post.published_version_id || null}
                         onVersionRestored={() => {
                             setShowHistory(false)
                             window.location.reload()
@@ -808,10 +814,13 @@ export function SeamlessPostView({ post: initialPost, mode = "view" }: Props) {
                     transition={MORPH_LAYOUT_TRANSITION}
                     className="mb-8 rounded-2xl overflow-hidden"
                 >
-                    <img
+                    <Image
                         src={post.cover_image}
                         alt={title}
+                        width={1600}
+                        height={900}
                         className="w-full h-64 md:h-80 object-cover"
+                        unoptimized
                     />
                 </motion.div>
             )}
@@ -835,10 +844,13 @@ export function SeamlessPostView({ post: initialPost, mode = "view" }: Props) {
             <motion.div className="flex flex-wrap items-center gap-4 mb-8" {...secondaryRevealMotion}>
                 <div className="flex items-center gap-2">
                     {post.author?.avatar_url ? (
-                        <img
+                        <Image
                             src={post.author.avatar_url}
                             alt={authorName}
+                            width={32}
+                            height={32}
                             className="w-8 h-8 rounded-full"
+                            unoptimized
                         />
                     ) : (
                         <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-sm font-medium">

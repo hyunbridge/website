@@ -1,4 +1,5 @@
 import { formatDistanceToNow } from "date-fns"
+import Image from "next/image"
 import type { Post } from "@/lib/blog-service"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -37,10 +38,13 @@ export function PostCard({ post, isAdmin = false, index = 0 }: PostCardProps) {
               transition={MORPH_LAYOUT_TRANSITION}
               className="relative h-48 w-full overflow-hidden"
             >
-              <img
+              <Image
                 src={post.cover_image || "/placeholder.svg"}
                 alt={post.title}
+                width={1200}
+                height={480}
                 className="object-cover w-full h-full transition-transform duration-300 hover:scale-105"
+                unoptimized
               />
               {!post.is_published && (
                 <Badge variant="secondary" className="absolute top-2 right-2">

@@ -2,7 +2,6 @@ import { Suspense } from "react"
 import { getPosts } from "@/lib/blog-service"
 import { PostList } from "@/components/blog/post-list"
 import { BlogCardListSkeleton } from "@/components/loading/blog-card-skeleton"
-import { Skeleton } from "@/components/ui/skeleton"
 
 export const metadata = {
   title: "Blog | Hyungyo Seo",

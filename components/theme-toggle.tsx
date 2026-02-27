@@ -11,7 +11,8 @@ export function ThemeToggle() {
 
   // Avoid hydration mismatch
   useEffect(() => {
-    setMounted(true)
+    const frameId = window.requestAnimationFrame(() => setMounted(true))
+    return () => window.cancelAnimationFrame(frameId)
   }, [])
 
   if (!mounted) {
@@ -37,4 +38,3 @@ export function ThemeToggle() {
     </Button>
   )
 }
-

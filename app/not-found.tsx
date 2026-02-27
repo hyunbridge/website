@@ -15,7 +15,9 @@ export default function NotFound() {
             <SearchX className="h-5 w-5" />
           </div>
           <CardTitle className="text-2xl">Page Not Found</CardTitle>
-          <CardDescription>The page you're looking for doesn't exist or has been moved.</CardDescription>
+          <CardDescription>
+            The page you&apos;re looking for doesn&apos;t exist or has been moved.
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <Suspense fallback={null}>

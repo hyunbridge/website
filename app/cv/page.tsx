@@ -65,15 +65,18 @@ export default async function CVPage() {
 }
 
 async function CVContentWrapper() {
+  let cv: Awaited<ReturnType<typeof getCVData>> | null = null
+  let errorMessage: string | null = null
+
   try {
-    const cv = await getCVData()
-    return <CVContent cv={cv} />
+    cv = await getCVData()
   } catch (error) {
-    return (
-        <ErrorMessage
-            title="Failed to load CV"
-            message={error instanceof Error ? error.message : "An unknown error occurred"}
-        />
-    )
+    errorMessage = error instanceof Error ? error.message : "An unknown error occurred"
   }
+
+  if (errorMessage) {
+    return <ErrorMessage title="Failed to load CV" message={errorMessage} />
+  }
+
+  return <CVContent cv={cv} />
 }

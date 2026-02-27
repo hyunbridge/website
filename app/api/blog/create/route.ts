@@ -7,7 +7,7 @@ export async function POST(request: Request) {
         const auth = await requireAuthenticatedSupabase(request)
         if (auth.errorResponse) return auth.errorResponse
 
-        const post = await createDraftPostWithClient(auth.supabase as any, auth.user.id)
+        const post = await createDraftPostWithClient(auth.supabase, auth.user.id)
         return NextResponse.json(post)
     } catch (error) {
         console.error("Error in create post API:", error)
