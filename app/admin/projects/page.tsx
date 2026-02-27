@@ -7,12 +7,13 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Plus, Loader2, AlertCircle, RefreshCw, GripVertical } from "lucide-react"
+import { Plus, Loader2, AlertCircle, RefreshCw, GripVertical, FolderSearch } from "lucide-react"
 import { getProjects, createProject, reorderProjects, type Project } from "@/lib/project-service"
 import { useAuth } from "@/contexts/auth-context"
 import Link from "next/link"
 import Chance from "chance"
 import Image from "next/image"
+import { StatePanel } from "@/components/ui/state-panel"
 import {
     DndContext,
     closestCenter,
@@ -178,8 +179,14 @@ export default function AdminProjectsPage() {
             {isLoading ? (
                 <AdminProjectListSkeleton />
             ) : projects.length === 0 ? (
-                <div className="text-center py-12 text-muted-foreground">
-                    <p>No projects yet. Create your first project!</p>
+                <div className="flex items-center justify-center py-12">
+                    <StatePanel
+                        className="max-w-lg"
+                        size="compact"
+                        icon={<FolderSearch className="h-5 w-5" />}
+                        title="No projects yet"
+                        description="Create your first project to get started."
+                    />
                 </div>
             ) : (
                 <DndContext

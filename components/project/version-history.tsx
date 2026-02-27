@@ -30,6 +30,7 @@ import { BlockNoteEditor } from "./blocknote-editor"
 import { useToast } from "@/hooks/use-toast"
 import { motion, AnimatePresence } from "framer-motion"
 import { cn } from "@/lib/utils"
+import { StatePanel } from "@/components/ui/state-panel"
 
 interface VersionHistoryProps {
   projectId: string
@@ -311,9 +312,13 @@ export function VersionHistory({ projectId, publishedVersionId, onVersionRestore
   // ─── Error ────────────────────────────────────────────────────
   if (error) {
     return (
-      <div className="rounded-xl border bg-card p-8 text-center">
-        <AlertTriangle className="h-8 w-8 mx-auto mb-3 text-destructive" />
-        <p className="text-sm text-destructive">Failed to load version history</p>
+      <div className="rounded-xl border bg-card p-6">
+        <StatePanel
+          size="compact"
+          tone="danger"
+          icon={<AlertTriangle className="h-5 w-5" />}
+          title="Failed to load version history"
+        />
       </div>
     )
   }
@@ -321,10 +326,13 @@ export function VersionHistory({ projectId, publishedVersionId, onVersionRestore
   // ─── Empty ────────────────────────────────────────────────────
   if (!versions.length) {
     return (
-      <div className="rounded-xl border bg-card p-8 text-center">
-        <History className="h-8 w-8 mx-auto mb-3 text-muted-foreground opacity-50" />
-        <p className="text-sm text-muted-foreground">No versions saved yet</p>
-        <p className="text-xs text-muted-foreground/60 mt-1">Versions are created when you save</p>
+      <div className="rounded-xl border bg-card p-6">
+        <StatePanel
+          size="compact"
+          icon={<History className="h-5 w-5" />}
+          title="No versions saved yet"
+          description="Versions are created when you save."
+        />
       </div>
     )
   }

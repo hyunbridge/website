@@ -9,6 +9,7 @@ import { Comments } from "./comments"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { StatePanel } from "@/components/ui/state-panel"
 import { Textarea } from "@/components/ui/textarea"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
@@ -602,13 +603,19 @@ export function SeamlessPostView({ post: initialPost, mode = "view" }: Props) {
         if (!displayContent) {
             // No published version available — don't expose draft
             return (
-                <div className="container max-w-4xl mx-auto py-8 md:py-12 text-center">
-                    <GlobeLock className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
-                    <h1 className="text-2xl font-bold mb-2">Not Yet Published</h1>
-                    <p className="text-muted-foreground">This post is still being worked on.</p>
-                    <Link href="/blog" className="text-sm text-primary hover:underline mt-4 inline-block">
-                        ← Back to all posts
-                    </Link>
+                <div className="container max-w-4xl mx-auto py-8 md:py-12">
+                    <StatePanel
+                        className="max-w-lg"
+                        size="compact"
+                        icon={<GlobeLock className="h-5 w-5" />}
+                        title="Not yet published"
+                        description="This post is still being worked on."
+                        actions={
+                            <Button variant="outline" asChild>
+                                <Link href="/blog">Back to all posts</Link>
+                            </Button>
+                        }
+                    />
                 </div>
             )
         }

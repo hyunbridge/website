@@ -41,7 +41,7 @@ export default function AdminTagsPage() {
   if (isLoading) {
     return (
       <div>
-        <h1 className="text-3xl font-bold mb-6">Tags</h1>
+        <h1 className="text-3xl font-bold mb-8">Tags</h1>
         <div className="flex flex-wrap gap-2">
           {Array.from({ length: 8 }).map((_, i) => (
             <Skeleton key={i} className="h-8 w-24 rounded-full" />
@@ -53,7 +53,7 @@ export default function AdminTagsPage() {
 
   return (
     <div>
-      <h1 className="text-3xl font-bold mb-6">Tags</h1>
+      <h1 className="text-3xl font-bold mb-8">Tags</h1>
 
       {error && (
         <Alert variant="destructive" className="mb-6">

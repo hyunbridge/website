@@ -7,6 +7,10 @@ import { getProjectById } from "@/lib/project-service"
 import { SeamlessProjectView } from "@/components/project/seamless-project-view"
 import type { Project } from "@/lib/project-service"
 import { Skeleton } from "@/components/ui/skeleton"
+import { AlertTriangle, ArrowLeft } from "lucide-react"
+import Link from "next/link"
+import { Button } from "@/components/ui/button"
+import { StatePanel } from "@/components/ui/state-panel"
 
 export default function EditProjectPage({ params }: { params: Promise<{ id: string }> }) {
     const resolvedParams = use(params)
@@ -46,7 +50,26 @@ export default function EditProjectPage({ params }: { params: Promise<{ id: stri
     }, [resolvedParams.id, user, authLoading, router])
 
     if (error) {
-        return <div className="p-8 text-destructive">{error}</div>
+        return (
+            <div className="container flex items-center justify-center py-8 md:py-12">
+                <StatePanel
+                    className="max-w-lg"
+                    tone="danger"
+                    size="compact"
+                    icon={<AlertTriangle className="h-5 w-5" />}
+                    title="Unable to open project"
+                    description={error}
+                    actions={
+                        <Button variant="outline" asChild>
+                            <Link href="/admin/projects" className="flex items-center gap-2">
+                                <ArrowLeft className="h-4 w-4" />
+                                Back to projects
+                            </Link>
+                        </Button>
+                    }
+                />
+            </div>
+        )
     }
 
     if (loading || authLoading || !project) {

@@ -1,18 +1,22 @@
-import { AlertCircle } from "lucide-react"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { AlertTriangle } from "lucide-react"
+import { cn } from "@/lib/utils"
+import { StatePanel } from "@/components/ui/state-panel"
 
 interface ErrorMessageProps {
   title?: string
   message: string
+  className?: string
 }
 
-export function ErrorMessage({ title = "Error", message }: ErrorMessageProps) {
+export function ErrorMessage({ title = "Error", message, className }: ErrorMessageProps) {
   return (
-    <Alert variant="destructive">
-      <AlertCircle className="h-4 w-4" />
-      <AlertTitle>{title}</AlertTitle>
-      <AlertDescription>{message}</AlertDescription>
-    </Alert>
+    <StatePanel
+      className={cn("max-w-lg", className)}
+      tone="danger"
+      size="compact"
+      icon={<AlertTriangle className="h-5 w-5" />}
+      title={title}
+      description={message}
+    />
   )
 }
-

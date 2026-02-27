@@ -9,9 +9,10 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Pencil } from "lucide-react"
+import { Pencil, Tags } from "lucide-react"
 import { updateTag, deleteTag, type Tag } from "@/lib/blog-service"
 import { toast } from "@/hooks/use-toast"
+import { StatePanel } from "@/components/ui/state-panel"
 
 interface TagListProps {
   tags?: Tag[]
@@ -120,7 +121,13 @@ export function TagList({
           </Badge>
         ))}
         {tags?.length === 0 && (
-          <p className="text-muted-foreground">No tags available.</p>
+          <StatePanel
+            className="max-w-lg"
+            size="compact"
+            icon={<Tags className="h-5 w-5" />}
+            title="No tags available"
+            description={isAdmin ? "Tags will appear once you start tagging posts." : "New tags will appear as posts are published."}
+          />
         )}
       </div>
 

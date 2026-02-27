@@ -21,14 +21,15 @@ export default async function AdminTagPostsPage({ params }: { params: Promise<{ 
 
   return (
     <div>
-      <div className="flex flex-col mb-8">
-        <h1 className="text-3xl font-bold">
-          Posts tagged with &quot;{tag.name}&quot;
-        </h1>
-        <Link href="/admin/tags" className="text-sm text-muted-foreground hover:underline mt-2">
+      <div className="mb-8">
+        <Link href="/admin/tags" className="text-sm text-muted-foreground hover:underline">
           ← Back to all tags
         </Link>
       </div>
+
+      <h1 className="text-3xl md:text-4xl font-bold mb-8">
+        Posts tagged with &quot;{tag.name}&quot;
+      </h1>
 
       <Suspense fallback={<LoadingSkeleton />}>
         <PostList initialPosts={posts} isAdmin />

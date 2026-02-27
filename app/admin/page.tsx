@@ -2,10 +2,11 @@ import type React from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
-import { FileText, FolderKanban, AlertCircle, RefreshCw } from "lucide-react"
+import { FileSearch, FileText, FolderKanban, FolderSearch, AlertCircle, RefreshCw } from "lucide-react"
 import Link from "next/link"
 import { getBlogPostCount, getRecentPosts, type RecentPostSummary } from "@/lib/blog-service"
 import { getProjectCount, getRecentProjects, type ProjectSummary } from "@/lib/project-service"
+import { StatePanel } from "@/components/ui/state-panel"
 
 export default async function AdminDashboard() {
   let postCount = 0
@@ -138,7 +139,12 @@ export default async function AdminDashboard() {
                 ))}
               </div>
             ) : (
-              <p className="text-muted-foreground text-center py-8">No projects yet</p>
+              <StatePanel
+                size="compact"
+                icon={<FolderSearch className="h-5 w-5" />}
+                title="No projects yet"
+                description="Create your first project to see it here."
+              />
             )}
             {!hasRecentProjectsError && (
               <div className="flex justify-end mt-4">
@@ -192,7 +198,12 @@ export default async function AdminDashboard() {
                 ))}
               </div>
             ) : (
-              <p className="text-muted-foreground text-center py-8">No recent blog posts</p>
+              <StatePanel
+                size="compact"
+                icon={<FileSearch className="h-5 w-5" />}
+                title="No recent blog posts"
+                description="Create a post and it will show up here."
+              />
             )}
             {!hasRecentPostsError && (
               <div className="flex justify-end mt-4">

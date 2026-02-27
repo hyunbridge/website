@@ -5,6 +5,8 @@ import { useInView } from "react-intersection-observer"
 import { type Post, getPosts } from "@/lib/blog-service"
 import { PostCard } from "./post-card"
 import { BlogCardSkeleton } from "@/components/loading/blog-card-skeleton"
+import { FileSearch } from "lucide-react"
+import { StatePanel } from "@/components/ui/state-panel"
 
 interface PostListProps {
   initialPosts: Post[]
@@ -52,11 +54,14 @@ export function PostList({ initialPosts, isAdmin = false }: PostListProps) {
 
   if (posts.length === 0 && !isLoading) {
     return (
-      <div className="text-center py-12">
-        <h3 className="text-xl font-medium mb-2">No posts found</h3>
-        <p className="text-muted-foreground">
-          {isAdmin ? "Create your first blog post to get started." : "Check back later for new content."}
-        </p>
+      <div className="flex items-center justify-center py-12">
+        <StatePanel
+          className="max-w-lg"
+          size="compact"
+          icon={<FileSearch className="h-5 w-5" />}
+          title="No posts found"
+          description={isAdmin ? "Create your first blog post to get started." : "Check back later for new content."}
+        />
       </div>
     )
   }

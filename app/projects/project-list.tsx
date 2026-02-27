@@ -3,21 +3,24 @@
 import { motion } from "framer-motion"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { AlertTriangle } from "lucide-react"
+import { FolderSearch } from "lucide-react"
 import Image from "next/image"
 import type { Project } from "@/lib/project-service"
 import { MORPH_LAYOUT_TRANSITION } from "@/lib/motion"
 import { MorphLink } from "@/components/morph-link"
+import { StatePanel } from "@/components/ui/state-panel"
 
 export function ProjectList({ projects }: { projects: Project[] }) {
   if (!projects || projects.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-16 text-center">
-        <AlertTriangle className="h-12 w-12 text-muted-foreground mb-4" />
-        <h3 className="text-xl font-medium mb-2">No projects found</h3>
-        <p className="text-muted-foreground max-w-md">
-          No published projects are available at the moment.
-        </p>
+      <div className="flex items-center justify-center py-12">
+        <StatePanel
+          className="max-w-lg"
+          size="compact"
+          icon={<FolderSearch className="h-5 w-5" />}
+          title="No projects found"
+          description="No published projects are available at the moment."
+        />
       </div>
     )
   }

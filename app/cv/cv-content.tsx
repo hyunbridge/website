@@ -2,7 +2,6 @@
 
 import "./cv-print.css"
 import { NotionRenderer } from "react-notion-x"
-import { ErrorMessage } from "@/components/error-message"
 import "react-notion-x/src/styles.css"
 import { useEffect, useState, useRef } from "react"
 import { CVSkeleton } from "./cv-skeleton"
@@ -11,6 +10,8 @@ import { CVSkeleton } from "./cv-skeleton"
 import dynamic from "next/dynamic"
 import Image from "next/image"
 import Link from "next/link"
+import { FileWarning } from "lucide-react"
+import { StatePanel } from "@/components/ui/state-panel"
 
 // Dynamically import Prism.js to fix the "Prism is not defined" error
 import "prismjs/themes/prism.css"
@@ -112,7 +113,16 @@ export function CVContent({ cv }) {
   const currentCv = cv
 
   if (!currentCv || !currentCv.recordMap) {
-    return <ErrorMessage title="CV not found" message="The CV content could not be loaded." />
+    return (
+      <StatePanel
+        className="max-w-lg"
+        tone="danger"
+        size="compact"
+        icon={<FileWarning className="h-5 w-5" />}
+        title="CV not found"
+        description="The CV content could not be loaded."
+      />
+    )
   }
 
   if (mounted) {
