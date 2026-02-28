@@ -1,0 +1,471 @@
+:root {
+  --content-font-family:
+    Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto,
+    "Helvetica Neue", "Segoe UI", "Apple SD Gothic Neo", "Noto Sans KR",
+    "Malgun Gothic", "Apple Color Emoji", "Segoe UI Emoji",
+    "Segoe UI Symbol", sans-serif;
+
+  --content-text-color: hsl(var(--foreground));
+  --content-muted-color: hsl(var(--muted-foreground));
+  --content-surface-color: transparent;
+  --content-card-color: hsl(var(--card));
+  --content-muted-surface-color: hsl(var(--muted));
+  --content-border-color: hsl(var(--border));
+  --content-popover-color: hsl(var(--popover));
+  --content-popover-foreground-color: hsl(var(--popover-foreground));
+  --content-accent-color: hsl(var(--accent));
+  --content-accent-foreground-color: hsl(var(--accent-foreground));
+  --content-primary-color: hsl(var(--primary));
+  --content-primary-foreground-color: hsl(var(--primary-foreground));
+  --content-selection-color: hsl(var(--primary));
+  --content-selection-soft-color: hsl(var(--primary) / 0.3);
+  --content-selection-muted-color: hsl(var(--primary) / 0.16);
+
+  --content-highlight-gray-text: rgb(155, 154, 151);
+  --content-highlight-gray-background: rgb(235, 236, 237);
+  --content-highlight-gray-background-soft: rgba(235, 236, 237, 0.3);
+  --content-highlight-brown-text: rgb(100, 71, 58);
+  --content-highlight-brown-background: rgb(233, 229, 227);
+  --content-highlight-brown-background-soft: rgba(233, 229, 227, 0.3);
+  --content-highlight-red-text: rgb(224, 62, 62);
+  --content-highlight-red-background: rgb(251, 228, 228);
+  --content-highlight-red-background-soft: rgba(251, 228, 228, 0.3);
+  --content-highlight-orange-text: rgb(217, 115, 13);
+  --content-highlight-orange-background: rgb(250, 235, 221);
+  --content-highlight-orange-background-soft: rgba(250, 235, 221, 0.3);
+  --content-highlight-yellow-text: rgb(223, 171, 1);
+  --content-highlight-yellow-background: rgb(251, 243, 219);
+  --content-highlight-yellow-background-soft: rgba(251, 243, 219, 0.3);
+  --content-highlight-green-text: rgb(77, 100, 97);
+  --content-highlight-green-background: rgb(221, 237, 234);
+  --content-highlight-green-background-soft: rgba(221, 237, 234, 0.3);
+  --content-highlight-blue-text: rgb(11, 110, 153);
+  --content-highlight-blue-background: rgb(221, 235, 241);
+  --content-highlight-blue-background-soft: rgba(221, 235, 241, 0.3);
+  --content-highlight-purple-text: rgb(105, 64, 165);
+  --content-highlight-purple-background: rgb(234, 228, 242);
+  --content-highlight-purple-background-soft: rgba(234, 228, 242, 0.3);
+  --content-highlight-pink-text: rgb(173, 26, 114);
+  --content-highlight-pink-background: rgb(244, 223, 235);
+  --content-highlight-pink-background-soft: rgba(244, 223, 235, 0.3);
+
+  --content-heading-weight: 600;
+  --content-strong-weight: 600;
+  --content-heading-line-height: 1.3;
+  --content-heading-1-size: 1.875em;
+  --content-heading-2-size: 1.5em;
+  --content-heading-3-size: 1.25em;
+  --content-heading-1-margin-top: 1.08em;
+  --content-heading-2-margin-top: 1.1em;
+  --content-heading-3-margin-top: 1em;
+  --content-block-padding-block: 3px;
+  --content-inline-padding-inline: 2px;
+  --content-block-margin-block: 1px;
+  --content-quote-padding: 0.2em 0.9em;
+  --content-quote-margin-block: 6px;
+  --content-quote-font-size: 1.2em;
+  --content-rule-margin-block: 6px;
+  --content-list-item-padding-block: 6px;
+  --content-list-marker-width: 24px;
+  --content-list-marker-gap: 4px;
+  --content-side-menu-offset: 48px;
+  --content-blocknote-radius: 8px;
+  --content-blocknote-shadow-medium: 0 4px 12px hsl(var(--border) / 0.24);
+  --content-blocknote-shadow-light: 0 2px 6px hsl(var(--border) / 0.18);
+}
+
+.dark {
+  --content-highlight-gray-text: rgb(190, 189, 184);
+  --content-highlight-gray-background: rgb(69, 75, 78);
+  --content-highlight-gray-background-soft: rgba(69, 75, 78, 0.3);
+  --content-highlight-brown-text: rgb(147, 114, 100);
+  --content-highlight-brown-background: rgb(67, 64, 64);
+  --content-highlight-brown-background-soft: rgba(67, 64, 64, 0.3);
+  --content-highlight-red-text: rgb(255, 115, 105);
+  --content-highlight-red-background: rgb(89, 65, 65);
+  --content-highlight-red-background-soft: rgba(89, 65, 65, 0.3);
+  --content-highlight-orange-text: rgb(255, 163, 68);
+  --content-highlight-orange-background: rgb(89, 74, 58);
+  --content-highlight-orange-background-soft: rgba(89, 74, 58, 0.3);
+  --content-highlight-yellow-text: rgb(255, 220, 73);
+  --content-highlight-yellow-background: rgb(89, 86, 59);
+  --content-highlight-yellow-background-soft: rgba(89, 86, 59, 0.3);
+  --content-highlight-green-text: rgb(77, 171, 154);
+  --content-highlight-green-background: rgb(53, 76, 75);
+  --content-highlight-green-background-soft: rgba(53, 76, 75, 0.3);
+  --content-highlight-blue-text: rgb(82, 156, 202);
+  --content-highlight-blue-background: rgb(54, 73, 84);
+  --content-highlight-blue-background-soft: rgba(120, 162, 187, 0.3);
+  --content-highlight-purple-text: rgb(154, 109, 215);
+  --content-highlight-purple-background: rgb(68, 63, 87);
+  --content-highlight-purple-background-soft: rgba(68, 63, 87, 0.3);
+  --content-highlight-pink-text: rgb(226, 85, 161);
+  --content-highlight-pink-background: rgb(83, 59, 76);
+  --content-highlight-pink-background-soft: rgba(83, 59, 76, 0.3);
+}
+
+/* Hide Notion database properties */
+.hide-notion-properties .notion-collection-page-properties,
+.hide-notion-properties .notion-page-property-value,
+.hide-notion-properties .notion-property-select,
+.hide-notion-properties .notion-property-multi_select,
+.hide-notion-properties .notion-property-relation,
+.hide-notion-properties .notion-property-formula,
+.hide-notion-properties .notion-property-title,
+.hide-notion-properties .notion-property-text,
+.hide-notion-properties .notion-property-checkbox,
+.hide-notion-properties .notion-property-url,
+.hide-notion-properties .notion-property-email,
+.hide-notion-properties .notion-property-phone_number,
+.hide-notion-properties .notion-property-number,
+.hide-notion-properties .notion-property-created_time,
+.hide-notion-properties .notion-property-last_edited_time,
+.hide-notion-properties .notion-property-date,
+.hide-notion-properties .notion-property-person,
+.hide-notion-properties .notion-property-file,
+.hide-notion-properties .notion-property-status,
+.hide-notion-properties .notion-collection-column-title {
+  display: none !important;
+}
+
+.hide-notion-properties .notion-collection-row {
+  display: none !important;
+}
+
+/* Disable heading link icons and keep heading text selectable */
+.notion-container .notion-h1,
+.notion-container .notion-h2,
+.notion-container .notion-h3,
+.notion-container .notion-h4,
+.notion-container .notion-h5 {
+  user-select: text !important;
+  pointer-events: auto !important;
+}
+
+.notion-container .notion-h1 > a,
+.notion-container .notion-h2 > a,
+.notion-container .notion-h3 > a,
+.notion-container .notion-h4 > a,
+.notion-container .notion-h5 > a {
+  pointer-events: none !important;
+}
+
+.notion-container .notion-h1 > a > span,
+.notion-container .notion-h2 > a > span,
+.notion-container .notion-h3 > a > span,
+.notion-container .notion-h4 > a > span,
+.notion-container .notion-h5 > a > span {
+  pointer-events: auto !important;
+}
+
+.notion-container .notion-h1 > a::after,
+.notion-container .notion-h2 > a::after,
+.notion-container .notion-h3 > a::after,
+.notion-container .notion-h4 > a::after,
+.notion-container .notion-h5 > a::after {
+  display: none !important;
+}
+
+/* Notion adapter */
+.notion-container,
+.notion-container .notion,
+.notion-container .dark-mode {
+  --notion-font: var(--content-font-family) !important;
+  --notion-max-width: 100%;
+  --notion-header-height: 0px;
+
+  --bg-color: var(--content-surface-color);
+  --bg-color-0: hsl(var(--border) / 0.72);
+  --bg-color-1: var(--content-card-color);
+  --bg-color-2: hsl(var(--muted) / 0.9);
+
+  --fg-color: var(--content-text-color);
+  --fg-color-0: hsl(var(--foreground) / 0.09);
+  --fg-color-1: hsl(var(--foreground) / 0.16);
+  --fg-color-2: hsl(var(--foreground) / 0.4);
+  --fg-color-3: hsl(var(--foreground) / 0.6);
+  --fg-color-4: var(--content-text-color);
+  --fg-color-5: hsl(var(--foreground) / 0.024);
+  --fg-color-6: hsl(var(--foreground) / 0.8);
+  --fg-color-7: hsl(var(--foreground) / 0.5);
+  --fg-color-icon: var(--content-text-color);
+
+  --select-color-0: var(--content-selection-color);
+  --select-color-1: var(--content-selection-soft-color);
+  --select-color-2: var(--content-selection-muted-color);
+
+  --notion-red: var(--content-highlight-red-text);
+  --notion-pink: var(--content-highlight-pink-text);
+  --notion-blue: var(--content-highlight-blue-text);
+  --notion-purple: var(--content-highlight-purple-text);
+  --notion-teal: var(--content-highlight-green-text);
+  --notion-yellow: var(--content-highlight-yellow-text);
+  --notion-orange: var(--content-highlight-orange-text);
+  --notion-brown: var(--content-highlight-brown-text);
+  --notion-gray: var(--content-highlight-gray-text);
+
+  --notion-red_background: var(--content-highlight-red-background);
+  --notion-pink_background: var(--content-highlight-pink-background);
+  --notion-blue_background: var(--content-highlight-blue-background);
+  --notion-purple_background: var(--content-highlight-purple-background);
+  --notion-teal_background: var(--content-highlight-green-background);
+  --notion-yellow_background: var(--content-highlight-yellow-background);
+  --notion-orange_background: var(--content-highlight-orange-background);
+  --notion-brown_background: var(--content-highlight-brown-background);
+  --notion-gray_background: var(--content-highlight-gray-background);
+
+  --notion-red_background_co: var(--content-highlight-red-background-soft);
+  --notion-pink_background_co: var(--content-highlight-pink-background-soft);
+  --notion-blue_background_co: var(--content-highlight-blue-background-soft);
+  --notion-purple_background_co: var(--content-highlight-purple-background-soft);
+  --notion-teal_background_co: var(--content-highlight-green-background-soft);
+  --notion-yellow_background_co: var(--content-highlight-yellow-background-soft);
+  --notion-orange_background_co: var(--content-highlight-orange-background-soft);
+  --notion-brown_background_co: var(--content-highlight-brown-background-soft);
+  --notion-gray_background_co: var(--content-highlight-gray-background-soft);
+
+  --notion-block-padding: 0;
+
+  color: var(--content-text-color);
+  user-select: text !important;
+}
+
+.notion-container .notion-page {
+  padding: 0 !important;
+  margin: 0 !important;
+  width: 100%;
+}
+
+.notion-container .notion-title {
+  display: none;
+}
+
+.notion-container .notion-h {
+  font-weight: var(--content-heading-weight);
+  line-height: var(--content-heading-line-height);
+}
+
+.notion-container .notion-h1 {
+  font-size: var(--content-heading-1-size);
+  margin-top: var(--content-heading-1-margin-top);
+}
+
+.notion-container .notion-h2 {
+  font-size: var(--content-heading-2-size);
+  margin-top: var(--content-heading-2-margin-top);
+}
+
+.notion-container .notion-h3 {
+  font-size: var(--content-heading-3-size);
+  margin-top: var(--content-heading-3-margin-top);
+}
+
+.notion-container .notion-quote {
+  border-left: 3px solid currentcolor;
+  padding: var(--content-quote-padding);
+  margin: var(--content-quote-margin-block) 0;
+  font-size: var(--content-quote-font-size);
+}
+
+.notion-container .notion-hr {
+  margin: var(--content-rule-margin-block) 0;
+  border-bottom-color: var(--content-border-color);
+}
+
+.notion-container .notion-text {
+  padding: var(--content-block-padding-block) var(--content-inline-padding-inline);
+  margin: var(--content-block-margin-block) 0;
+}
+
+.notion-container .notion-list li {
+  padding: var(--content-list-item-padding-block) 0;
+}
+
+.notion-container .notion b {
+  font-weight: var(--content-strong-weight);
+}
+
+/* BlockNote adapter */
+.blocknote-wrapper .bn-container[data-color-scheme],
+.blocknote-seamless .bn-container[data-color-scheme] {
+  --bn-colors-editor-text: var(--content-text-color);
+  --bn-colors-editor-background: var(--content-surface-color);
+  --bn-colors-menu-text: var(--content-popover-foreground-color);
+  --bn-colors-menu-background: var(--content-popover-color);
+  --bn-colors-tooltip-text: var(--content-popover-foreground-color);
+  --bn-colors-tooltip-background: var(--content-popover-color);
+  --bn-colors-hovered-text: var(--content-accent-foreground-color);
+  --bn-colors-hovered-background: var(--content-accent-color);
+  --bn-colors-selected-text: var(--content-primary-foreground-color);
+  --bn-colors-selected-background: var(--content-primary-color);
+  --bn-colors-disabled-text: var(--content-muted-color);
+  --bn-colors-disabled-background: var(--content-muted-surface-color);
+  --bn-colors-shadow: var(--content-border-color);
+  --bn-colors-border: var(--content-border-color);
+  --bn-colors-side-menu: var(--content-muted-color);
+
+  --bn-colors-highlights-gray-text: var(--content-highlight-gray-text);
+  --bn-colors-highlights-gray-background: var(--content-highlight-gray-background);
+  --bn-colors-highlights-brown-text: var(--content-highlight-brown-text);
+  --bn-colors-highlights-brown-background: var(--content-highlight-brown-background);
+  --bn-colors-highlights-red-text: var(--content-highlight-red-text);
+  --bn-colors-highlights-red-background: var(--content-highlight-red-background);
+  --bn-colors-highlights-orange-text: var(--content-highlight-orange-text);
+  --bn-colors-highlights-orange-background: var(--content-highlight-orange-background);
+  --bn-colors-highlights-yellow-text: var(--content-highlight-yellow-text);
+  --bn-colors-highlights-yellow-background: var(--content-highlight-yellow-background);
+  --bn-colors-highlights-green-text: var(--content-highlight-green-text);
+  --bn-colors-highlights-green-background: var(--content-highlight-green-background);
+  --bn-colors-highlights-blue-text: var(--content-highlight-blue-text);
+  --bn-colors-highlights-blue-background: var(--content-highlight-blue-background);
+  --bn-colors-highlights-purple-text: var(--content-highlight-purple-text);
+  --bn-colors-highlights-purple-background: var(--content-highlight-purple-background);
+  --bn-colors-highlights-pink-text: var(--content-highlight-pink-text);
+  --bn-colors-highlights-pink-background: var(--content-highlight-pink-background);
+
+  --bn-font-family: var(--content-font-family);
+  --bn-border-radius: var(--content-blocknote-radius);
+  --bn-shadow-medium: var(--content-blocknote-shadow-medium);
+  --bn-shadow-light: var(--content-blocknote-shadow-light);
+  --bn-border: 1px solid var(--content-border-color);
+}
+
+.blocknote-wrapper .bn-default-styles,
+.blocknote-seamless .bn-default-styles {
+  font-family: var(--content-font-family) !important;
+}
+
+.blocknote-seamless .bn-editor {
+  background-color: transparent;
+  border-radius: 0;
+  padding-inline: 0;
+}
+
+.blocknote-seamless .bn-side-menu {
+  position: absolute;
+  left: calc(-1 * var(--content-side-menu-offset));
+}
+
+.blocknote-seamless[data-readonly="true"] .bn-side-menu,
+.blocknote-seamless .bn-editor[contenteditable="false"] + .bn-side-menu {
+  display: none;
+}
+
+.blocknote-wrapper [data-content-type="heading"],
+.blocknote-seamless [data-content-type="heading"] {
+  --level: var(--content-heading-1-size) !important;
+}
+
+.blocknote-wrapper [data-content-type="heading"][data-level="2"],
+.blocknote-seamless [data-content-type="heading"][data-level="2"] {
+  --level: var(--content-heading-2-size) !important;
+}
+
+.blocknote-wrapper [data-content-type="heading"][data-level="3"],
+.blocknote-seamless [data-content-type="heading"][data-level="3"] {
+  --level: var(--content-heading-3-size) !important;
+}
+
+.blocknote-wrapper [data-prev-level="1"],
+.blocknote-seamless [data-prev-level="1"] {
+  --prev-level: var(--content-heading-1-size) !important;
+}
+
+.blocknote-wrapper [data-prev-level="2"],
+.blocknote-seamless [data-prev-level="2"] {
+  --prev-level: var(--content-heading-2-size) !important;
+}
+
+.blocknote-wrapper [data-prev-level="3"],
+.blocknote-seamless [data-prev-level="3"] {
+  --prev-level: var(--content-heading-3-size) !important;
+}
+
+.blocknote-wrapper .bn-block-content[data-content-type="heading"] .bn-inline-content,
+.blocknote-seamless .bn-block-content[data-content-type="heading"] .bn-inline-content {
+  font-weight: var(--content-heading-weight);
+  line-height: var(--content-heading-line-height);
+}
+
+.blocknote-wrapper
+  .bn-block-outer:not(:first-child)
+  > .bn-block
+  > .bn-block-content[data-content-type="heading"],
+.blocknote-seamless
+  .bn-block-outer:not(:first-child)
+  > .bn-block
+  > .bn-block-content[data-content-type="heading"] {
+  margin-top: var(--content-heading-1-margin-top);
+}
+
+.blocknote-wrapper
+  .bn-block-outer:not(:first-child)
+  > .bn-block
+  > .bn-block-content[data-content-type="heading"][data-level="2"],
+.blocknote-seamless
+  .bn-block-outer:not(:first-child)
+  > .bn-block
+  > .bn-block-content[data-content-type="heading"][data-level="2"] {
+  margin-top: var(--content-heading-2-margin-top);
+}
+
+.blocknote-wrapper
+  .bn-block-outer:not(:first-child)
+  > .bn-block
+  > .bn-block-content[data-content-type="heading"][data-level="3"],
+.blocknote-seamless
+  .bn-block-outer:not(:first-child)
+  > .bn-block
+  > .bn-block-content[data-content-type="heading"][data-level="3"] {
+  margin-top: var(--content-heading-3-margin-top);
+}
+
+.blocknote-wrapper [data-content-type="quote"] blockquote,
+.blocknote-seamless [data-content-type="quote"] blockquote {
+  border-left: 3px solid currentcolor;
+  color: inherit;
+  font-size: var(--content-quote-font-size);
+  padding: var(--content-quote-padding);
+  margin: 0;
+}
+
+.blocknote-wrapper [data-content-type="divider"] hr,
+.blocknote-wrapper [data-content-type="horizontalRule"] hr,
+.blocknote-seamless [data-content-type="divider"] hr,
+.blocknote-seamless [data-content-type="horizontalRule"] hr {
+  border: none;
+  border-top: 1px solid var(--content-border-color);
+  margin: var(--content-rule-margin-block) 0;
+}
+
+.blocknote-wrapper .bn-block-content[data-content-type="bulletListItem"]::before,
+.blocknote-wrapper .bn-block-content[data-content-type="numberedListItem"]::before,
+.blocknote-seamless .bn-block-content[data-content-type="bulletListItem"]::before,
+.blocknote-seamless .bn-block-content[data-content-type="numberedListItem"]::before {
+  min-width: var(--content-list-marker-width);
+  padding-right: var(--content-list-marker-gap);
+}
+
+.blocknote-wrapper .bn-block-content[data-content-type="bulletListItem"],
+.blocknote-wrapper .bn-block-content[data-content-type="numberedListItem"],
+.blocknote-seamless .bn-block-content[data-content-type="bulletListItem"],
+.blocknote-seamless .bn-block-content[data-content-type="numberedListItem"] {
+  padding-top: var(--content-list-item-padding-block);
+  padding-bottom: var(--content-list-item-padding-block);
+}
+
+.blocknote-wrapper .bn-block-content,
+.blocknote-seamless .bn-block-content {
+  padding-top: var(--content-block-padding-block);
+  padding-bottom: var(--content-block-padding-block);
+}
+
+.blocknote-wrapper .bn-block-content[data-content-type="paragraph"] .bn-inline-content,
+.blocknote-seamless .bn-block-content[data-content-type="paragraph"] .bn-inline-content {
+  padding-inline: var(--content-inline-padding-inline);
+}
+
+.blocknote-wrapper .bn-inline-content strong,
+.blocknote-seamless .bn-inline-content strong {
+  font-weight: var(--content-strong-weight);
+}

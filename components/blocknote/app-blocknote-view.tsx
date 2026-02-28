@@ -1,12 +1,11 @@
 "use client"
 
-import React, { useCallback, useContext } from "react"
+import React, { useContext } from "react"
 import { mergeCSSClasses, type BlockSchema, type InlineContentSchema, type StyleSchema } from "@blocknote/core"
 import { BlockNoteViewRaw, ComponentsContext } from "@blocknote/react"
-import { components, applyBlockNoteCSSVariablesFromTheme, removeBlockNoteCSSVariables } from "@blocknote/mantine"
+import { components } from "@blocknote/mantine"
 import "@blocknote/mantine/style.css"
 import { MantineContext, MantineProvider } from "@mantine/core"
-import { BLOCKNOTE_APP_THEME } from "@/lib/blocknote-theme"
 
 type ColorScheme = "light" | "dark"
 
@@ -21,12 +20,6 @@ export const AppBlockNoteView = <
 ) => {
   const { className, colorScheme, ...rest } = props
 
-  const ref = useCallback((node: HTMLDivElement | null) => {
-    if (!node) return
-    removeBlockNoteCSSVariables(node)
-    applyBlockNoteCSSVariablesFromTheme(BLOCKNOTE_APP_THEME, node)
-  }, [])
-
   const mantineContext = useContext(MantineContext)
 
   const view = (
@@ -36,7 +29,6 @@ export const AppBlockNoteView = <
         className={mergeCSSClasses("bn-mantine", className || "")}
         theme={colorScheme}
         {...rest}
-        ref={ref}
       />
     </ComponentsContext.Provider>
   )
