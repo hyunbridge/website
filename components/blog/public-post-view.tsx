@@ -16,6 +16,7 @@ import { GlobeLock } from "lucide-react"
 import { motion } from "framer-motion"
 import { MORPH_LAYOUT_TRANSITION } from "@/lib/motion"
 import { useNavigationIntent } from "@/components/navigation-intent-provider"
+import { SharedTransitionImage, SharedTransitionTitle } from "@/components/shared-content-transition"
 
 type PublishedSnapshot = {
   title: string
@@ -99,29 +100,35 @@ export function PublicPostView({
   return (
     <motion.div transition={MORPH_LAYOUT_TRANSITION} className="container max-w-4xl mx-auto py-8 md:py-12">
       <div className="mb-6">
-        <BackLink href="/blog">Back to all posts</BackLink>
+        <BackLink
+          href="/blog"
+          morphIntent="blog-list"
+          morphSource={{
+            itemId: post.id,
+            title: displayTitle,
+            coverImage: post.cover_image,
+          }}
+          preferHistoryBack
+        >
+          Back to all posts
+        </BackLink>
       </div>
 
       {post.cover_image && (
-        <motion.div
-          layoutId={`blog-image-${post.id}`}
-          transition={MORPH_LAYOUT_TRANSITION}
-          className="mb-8 rounded-2xl overflow-hidden"
-        >
-          <Image
-            src={post.cover_image}
-            alt={displayTitle}
-            width={1600}
-            height={900}
-            className="w-full h-64 md:h-80 object-cover"
-            unoptimized
-          />
-        </motion.div>
+        <SharedTransitionImage
+          kind="blog"
+          itemId={post.id}
+          src={post.cover_image}
+          alt={displayTitle}
+          containerClassName="mb-8 h-64 md:h-80 w-full rounded-2xl"
+          sizes="(max-width: 1024px) 100vw, 896px"
+          priority
+        />
       )}
 
-      <motion.div layoutId={`blog-title-${post.id}`} transition={MORPH_LAYOUT_TRANSITION}>
+      <SharedTransitionTitle kind="blog" itemId={post.id}>
         <h1 className="text-3xl md:text-5xl font-bold mb-4">{displayTitle}</h1>
-      </motion.div>
+      </SharedTransitionTitle>
 
       <motion.div className="flex flex-wrap items-center gap-4 mb-8" {...secondaryRevealMotion}>
         <div className="flex items-center gap-2">

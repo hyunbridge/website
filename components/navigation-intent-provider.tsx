@@ -3,16 +3,24 @@
 import type React from "react"
 import { createContext, useCallback, useContext, useMemo, useState } from "react"
 
-export type NavigationIntentKind = "projects-detail" | "blog-detail"
+export type NavigationIntentKind = "projects-detail" | "blog-detail" | "projects-list" | "blog-list"
+
+export type NavigationIntentPayload = {
+  itemId?: string
+  title?: string
+  coverImage?: string | null
+}
 
 type NavigationIntent = {
   kind: NavigationIntentKind
   href: string
   createdAt: number
-}
+} & NavigationIntentPayload
+
+type PendingNavigationIntent = Omit<NavigationIntent, "createdAt">
 
 type NavigationIntentContextValue = {
-  markIntent: (intent: Omit<NavigationIntent, "createdAt">) => void
+  markIntent: (intent: PendingNavigationIntent) => void
   getRecentIntent: () => NavigationIntent | null
   clearIntent: () => void
 }
@@ -24,7 +32,7 @@ const NavigationIntentContext = createContext<NavigationIntentContextValue | nul
 export function NavigationIntentProvider({ children }: { children: React.ReactNode }) {
   const [intent, setIntent] = useState<NavigationIntent | null>(null)
 
-  const markIntent = useCallback((nextIntent: Omit<NavigationIntent, "createdAt">) => {
+  const markIntent = useCallback((nextIntent: PendingNavigationIntent) => {
     setIntent({
       ...nextIntent,
       createdAt: Date.now(),
@@ -60,4 +68,3 @@ export function useNavigationIntent() {
   }
   return context
 }
-

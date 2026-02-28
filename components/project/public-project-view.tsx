@@ -16,6 +16,7 @@ import { GlobeLock, MessageSquare } from "lucide-react"
 import { motion } from "framer-motion"
 import { MORPH_LAYOUT_TRANSITION } from "@/lib/motion"
 import { useNavigationIntent } from "@/components/navigation-intent-provider"
+import { SharedTransitionImage, SharedTransitionTitle } from "@/components/shared-content-transition"
 
 type PublishedSnapshot = {
   title: string
@@ -99,29 +100,35 @@ export function PublicProjectView({
   return (
     <motion.div transition={MORPH_LAYOUT_TRANSITION} className="container max-w-4xl mx-auto py-8 md:py-12">
       <div className="mb-6">
-        <BackLink href="/projects">Back to all projects</BackLink>
+        <BackLink
+          href="/projects"
+          morphIntent="projects-list"
+          morphSource={{
+            itemId: project.id,
+            title: displayTitle,
+            coverImage: project.cover_image,
+          }}
+          preferHistoryBack
+        >
+          Back to all projects
+        </BackLink>
       </div>
 
       {project.cover_image && (
-        <motion.div
-          layoutId={`project-image-${project.id}`}
-          transition={MORPH_LAYOUT_TRANSITION}
-          className="mb-8 rounded-2xl overflow-hidden"
-        >
-          <Image
-            src={project.cover_image}
-            alt={displayTitle}
-            width={1600}
-            height={900}
-            className="w-full h-64 md:h-80 object-cover"
-            unoptimized
-          />
-        </motion.div>
+        <SharedTransitionImage
+          kind="project"
+          itemId={project.id}
+          src={project.cover_image}
+          alt={displayTitle}
+          containerClassName="mb-8 h-64 md:h-80 w-full rounded-2xl"
+          sizes="(max-width: 1024px) 100vw, 896px"
+          priority
+        />
       )}
 
-      <motion.div layoutId={`project-title-${project.id}`} transition={MORPH_LAYOUT_TRANSITION}>
+      <SharedTransitionTitle kind="project" itemId={project.id}>
         <h1 className="text-3xl md:text-5xl font-bold mb-4">{displayTitle}</h1>
-      </motion.div>
+      </SharedTransitionTitle>
 
       <motion.div className="flex flex-wrap items-center gap-4 mb-8" {...secondaryRevealMotion}>
         <div className="flex items-center gap-2">

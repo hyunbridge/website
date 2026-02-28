@@ -4,15 +4,26 @@ import type React from "react"
 import Link, { type LinkProps } from "next/link"
 import { useRouter } from "next/navigation"
 import { useNavigationIntent } from "@/components/navigation-intent-provider"
+import type { NavigationIntentKind, NavigationIntentPayload } from "@/components/navigation-intent-provider"
 
-type MorphIntent = "projects-detail" | "blog-detail"
+type MorphIntent = NavigationIntentKind
 
 type Props = LinkProps &
   Omit<React.AnchorHTMLAttributes<HTMLAnchorElement>, "href"> & {
     morphIntent?: MorphIntent
+    morphSource?: NavigationIntentPayload
   }
 
-export function MorphLink({ href, morphIntent, onClick, onMouseEnter, onFocus, onTouchStart, ...props }: Props) {
+export function MorphLink({
+  href,
+  morphIntent,
+  morphSource,
+  onClick,
+  onMouseEnter,
+  onFocus,
+  onTouchStart,
+  ...props
+}: Props) {
   const router = useRouter()
   const { markIntent } = useNavigationIntent()
   const hrefString = typeof href === "string" ? href : href.pathname || ""
@@ -24,7 +35,7 @@ export function MorphLink({ href, morphIntent, onClick, onMouseEnter, onFocus, o
 
   const markNavigationIntent = () => {
     if (!morphIntent) return
-    markIntent({ kind: morphIntent, href: hrefString })
+    markIntent({ kind: morphIntent, href: hrefString, ...morphSource })
   }
 
   return (

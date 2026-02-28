@@ -8,6 +8,7 @@ import { PAGE_TRANSITION } from "@/lib/motion"
 import { useNavigationIntent } from "@/components/navigation-intent-provider"
 
 const MORPH_FREEZE_MS = 220
+const MORPH_INTENT_SETTLE_MS = 450
 
 function isMorphDestination(pathname: string, intentHref: string) {
   return pathname === intentHref
@@ -22,6 +23,7 @@ export function RouteTransitionProvider({ children }: { children: React.ReactNod
   const prefersMorphOnlyTransition = displayPathname.startsWith("/projects") || displayPathname.startsWith("/blog")
   const rootTransitionKey = isAdminRoute ? "/admin-shell" : displayPathname
   const freezeTimeoutRef = useRef<number | null>(null)
+  const settleTimeoutRef = useRef<number | null>(null)
   const pendingRef = useRef<{ pathname: string; children: React.ReactNode } | null>(null)
   const isFrozenRef = useRef(false)
 
@@ -29,6 +31,9 @@ export function RouteTransitionProvider({ children }: { children: React.ReactNod
     return () => {
       if (freezeTimeoutRef.current) {
         window.clearTimeout(freezeTimeoutRef.current)
+      }
+      if (settleTimeoutRef.current) {
+        window.clearTimeout(settleTimeoutRef.current)
       }
     }
   }, [])
@@ -57,6 +62,10 @@ export function RouteTransitionProvider({ children }: { children: React.ReactNod
         window.clearTimeout(freezeTimeoutRef.current)
         freezeTimeoutRef.current = null
       }
+      if (settleTimeoutRef.current) {
+        window.clearTimeout(settleTimeoutRef.current)
+        settleTimeoutRef.current = null
+      }
       isFrozenRef.current = false
       pendingRef.current = null
       queueStateUpdate(() => {
@@ -83,7 +92,13 @@ export function RouteTransitionProvider({ children }: { children: React.ReactNod
       pendingRef.current = null
       isFrozenRef.current = false
       freezeTimeoutRef.current = null
-      clearIntent()
+      if (settleTimeoutRef.current) {
+        window.clearTimeout(settleTimeoutRef.current)
+      }
+      settleTimeoutRef.current = window.setTimeout(() => {
+        clearIntent()
+        settleTimeoutRef.current = null
+      }, MORPH_INTENT_SETTLE_MS)
     }, MORPH_FREEZE_MS)
   }, [pathname, children, displayPathname, getRecentIntent, clearIntent])
 
