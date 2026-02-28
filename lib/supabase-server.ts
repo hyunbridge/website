@@ -2,11 +2,12 @@ import { createClient } from "@supabase/supabase-js"
 import type { Database } from "@/types/supabase"
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ""
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ""
-const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || ""
+const supabasePublishableKey =
+  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || ""
+const supabaseSecretKey = process.env.SUPABASE_SECRET_KEY || ""
 
 export function getServerSupabase() {
-  return createClient<Database>(supabaseUrl, supabaseAnonKey, {
+  return createClient<Database>(supabaseUrl, supabasePublishableKey, {
     auth: {
       persistSession: true,
       autoRefreshToken: true,
@@ -16,11 +17,11 @@ export function getServerSupabase() {
 }
 
 export function getServiceRoleSupabase() {
-  if (!supabaseServiceRoleKey) {
-    throw new Error("Missing SUPABASE_SERVICE_ROLE_KEY")
+  if (!supabaseSecretKey) {
+    throw new Error("Missing SUPABASE_SECRET_KEY")
   }
 
-  return createClient<Database>(supabaseUrl, supabaseServiceRoleKey, {
+  return createClient<Database>(supabaseUrl, supabaseSecretKey, {
     auth: {
       persistSession: false,
       autoRefreshToken: false,
@@ -30,7 +31,7 @@ export function getServiceRoleSupabase() {
 }
 
 export function getAuthenticatedSupabase(token: string) {
-  return createClient<Database>(supabaseUrl, supabaseAnonKey, {
+  return createClient<Database>(supabaseUrl, supabasePublishableKey, {
     global: {
       headers: {
         Authorization: `Bearer ${token}`,
