@@ -29,6 +29,7 @@ export async function convertUrlToPdf(targetUrl: string): Promise<Buffer> {
   formData.set("url", targetUrl)
   formData.set("printBackground", "true")
   formData.set("preferCssPageSize", "true")
+  formData.set("waitForSelector", "[data-cv-print-ready='true']")
 
   const headers = new Headers()
   const authorization = getAuthorizationHeader()

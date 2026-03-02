@@ -36,6 +36,7 @@ type CVContentProps = {
   cv: {
     recordMap?: unknown
   } | null
+  printMode?: boolean
 }
 
 type NotionRendererRecordMap = ComponentProps<typeof NotionRenderer>["recordMap"]
@@ -70,8 +71,9 @@ export function formatLastModified(timestamp: string | number | null): string {
   })
 }
 
-export function CVContent({ cv }: CVContentProps) {
+export function CVContent({ cv, printMode = false }: CVContentProps) {
   const [mounted, setMounted] = useState(false)
+  const [printReady, setPrintReady] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -122,9 +124,17 @@ export function CVContent({ cv }: CVContentProps) {
         img.decoding = "sync"
       })
     })
+
   }, [mounted])
 
-  const isDarkMode = mounted && document.documentElement.classList.contains("dark")
+  useEffect(() => {
+    if (!mounted || !printMode) return
+
+    const frameId = window.requestAnimationFrame(() => setPrintReady(true))
+    return () => window.cancelAnimationFrame(frameId)
+  }, [mounted, printMode])
+
+  const isDarkMode = !printMode && mounted && document.documentElement.classList.contains("dark")
   const currentCv = cv
 
   if (!currentCv || !currentCv.recordMap) {
@@ -144,7 +154,11 @@ export function CVContent({ cv }: CVContentProps) {
   const formattedDate = formatLastModified(lastEditedTimestamp)
 
   return (
-    <div ref={containerRef} className="notion-container print:notion-container dark:text-white">
+    <div
+      ref={containerRef}
+      className="notion-container print:notion-container dark:text-white"
+      data-cv-print-ready={printMode && printReady ? "true" : undefined}
+    >
       <NotionRenderer
         recordMap={currentCv.recordMap as NotionRendererRecordMap}
         fullPage={false}

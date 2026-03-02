@@ -14,7 +14,20 @@ export const metadata = {
   description: "Curriculum vitae",
 }
 
-export default async function CVPage() {
+type Props = {
+  searchParams?: Promise<{
+    print?: string | string[] | undefined
+  }>
+}
+
+export default async function CVPage({ searchParams }: Props) {
+  const resolvedSearchParams = searchParams ? await searchParams : undefined
+  const isPrintMode = isPrintQueryEnabled(resolvedSearchParams?.print)
+
+  if (isPrintMode) {
+    return <CVPrintPage />
+  }
+
   return (
     <div className="container py-8 md:py-12">
       {/* Mobile: display without card */}
@@ -64,6 +77,34 @@ export default async function CVPage() {
   )
 }
 
+async function CVPrintPage() {
+  let cv: Awaited<ReturnType<typeof getCVData>> | null = null
+  let errorMessage: string | null = null
+
+  try {
+    cv = await getCVData()
+  } catch (error) {
+    errorMessage = error instanceof Error ? error.message : "An unknown error occurred"
+  }
+
+  if (errorMessage) {
+    return (
+      <div className="container py-8 md:py-12">
+        <ErrorMessage title="Failed to load CV" message={errorMessage} />
+      </div>
+    )
+  }
+
+  return (
+    <div className="container py-8 md:py-12">
+      <div className="mx-auto max-w-4xl">
+        <h1 className="mb-6 text-3xl font-bold md:text-4xl">서현교</h1>
+        <CVContent cv={cv} printMode />
+      </div>
+    </div>
+  )
+}
+
 async function CVContentWrapper() {
   let cv: Awaited<ReturnType<typeof getCVData>> | null = null
   let errorMessage: string | null = null
@@ -79,4 +120,12 @@ async function CVContentWrapper() {
   }
 
   return <CVContent cv={cv} />
+}
+
+function isPrintQueryEnabled(value: string | string[] | undefined): boolean {
+  if (Array.isArray(value)) {
+    return value.includes("true")
+  }
+
+  return value === "true"
 }
