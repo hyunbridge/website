@@ -3,10 +3,9 @@ import { verifyTurnstileToken } from "@/app/actions/verify-cv-download"
 import { buildCVPdfObjectKey, getCVLastModified, getCVPdfCacheControl, getCVRenderTargetUrl } from "@/lib/cv-pdf"
 import { convertUrlToPdf } from "@/lib/gotenberg"
 import { getCVData } from "@/lib/notion"
-import { getSignedDownloadUrl, isObjectStorageConfigured, objectExists, uploadObject } from "@/lib/object-storage"
+import { getPublicObjectUrl, isObjectStorageConfigured, objectExists, uploadObject } from "@/lib/object-storage"
 
 const DOWNLOAD_FILENAME = "CV.pdf"
-const DOWNLOAD_URL_TTL_SECONDS = Number(process.env.CV_PDF_DOWNLOAD_URL_TTL_SECONDS || 60)
 
 export async function GET(request: Request) {
   try {
@@ -51,15 +50,9 @@ export async function GET(request: Request) {
     const cv = await getCVData()
     const lastModified = getCVLastModified(cv.recordMap)
     const objectKey = buildCVPdfObjectKey(lastModified)
+    const downloadUrl = getPublicObjectUrl(objectKey)
 
     if (await objectExists(objectKey)) {
-      const downloadUrl = await getSignedDownloadUrl({
-        key: objectKey,
-        contentDisposition: `attachment; filename="${DOWNLOAD_FILENAME}"`,
-        contentType: "application/pdf",
-        expiresIn: DOWNLOAD_URL_TTL_SECONDS,
-      })
-
       return NextResponse.json({
         downloadUrl,
         source: "cache",
@@ -84,13 +77,6 @@ export async function GET(request: Request) {
         render_url: targetUrl,
         ...(lastModified ? { revision: lastModified } : {}),
       },
-    })
-
-    const downloadUrl = await getSignedDownloadUrl({
-      key: objectKey,
-      contentDisposition: `attachment; filename="${DOWNLOAD_FILENAME}"`,
-      contentType: "application/pdf",
-      expiresIn: DOWNLOAD_URL_TTL_SECONDS,
     })
 
     return NextResponse.json({
