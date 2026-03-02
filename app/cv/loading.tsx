@@ -8,8 +8,8 @@ export default function CVLoading() {
       {/* Mobile: display without card */}
       <div className="md:hidden">
         <div className="flex flex-row items-center justify-between">
-          <Skeleton className="h-10 w-48" />
-          <Skeleton className="h-10 w-28" />
+          <Skeleton className="h-9 w-20" />
+          <Skeleton className="h-10 w-36" />
         </div>
         <CVSkeleton />
       </div>
@@ -17,9 +17,9 @@ export default function CVLoading() {
       {/* Desktop: uses card layout */}
       <div className="hidden md:block">
         <Card className="bg-card w-full rounded-lg shadow-lg overflow-hidden">
-          <CardHeader className="flex flex-row items-center justify-between">
-            <Skeleton className="h-10 w-48" />
-            <Skeleton className="h-10 w-28" />
+          <CardHeader className="bg-card flex flex-row items-center justify-between">
+            <Skeleton className="h-10 w-24" />
+            <Skeleton className="h-10 w-40" />
           </CardHeader>
           <CardContent>
             <CVSkeleton />
