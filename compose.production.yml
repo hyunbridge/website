@@ -1,0 +1,19 @@
+services:
+  website:
+    image: ${DOCKER_IMAGE:?DOCKER_IMAGE is required}
+    restart: unless-stopped
+    depends_on:
+      gotenberg:
+        condition: service_started
+    ports:
+      - "3000:3000"
+    env_file:
+      - ./.env.runtime
+    environment:
+      NODE_ENV: production
+      GOTENBERG_URL: http://gotenberg:3000
+      PDF_RENDER_BASE_URL: http://website:3000
+
+  gotenberg:
+    image: gotenberg/gotenberg:8
+    restart: unless-stopped

@@ -42,43 +42,94 @@ jobs:
             --build-arg NEXT_PUBLIC_BASE_URL=${{ secrets.NEXT_PUBLIC_BASE_URL }} \
             --build-arg NOTION_CV_PAGE_ID=${{ secrets.NOTION_CV_PAGE_ID }}
 
-      - name: Deploy to VM
-        uses: appleboy/ssh-action@v0.1.7
+      - name: Prepare Deploy Directory
+        uses: appleboy/ssh-action@v1
         with:
           host: ${{ secrets.VM_HOST }}
           username: ${{ secrets.VM_USER }}
           key: ${{ secrets.VM_SSH_KEY }}
           script: |
+            set -e
+            mkdir -p "$HOME/website"
+
+      - name: Copy Compose File
+        uses: appleboy/scp-action@v1
+        with:
+          host: ${{ secrets.VM_HOST }}
+          username: ${{ secrets.VM_USER }}
+          key: ${{ secrets.VM_SSH_KEY }}
+          source: "compose.production.yml"
+          target: "website"
+          overwrite: true
+
+      - name: Deploy to VM
+        uses: appleboy/ssh-action@v1
+        env:
+          DOCKER_IMAGE: "${{ secrets.DOCKER_USERNAME }}/website:latest"
+          NOTION_CV_PAGE_ID: "${{ secrets.NOTION_CV_PAGE_ID }}"
+          PROTECTED_EMAIL: "${{ secrets.PROTECTED_EMAIL }}"
+          CLOUDFLARE_TURNSTILE_SECRET_KEY: "${{ secrets.CLOUDFLARE_TURNSTILE_SECRET_KEY }}"
+          JWT_SECRET_KEY: "${{ secrets.JWT_SECRET_KEY }}"
+          ASSET_GC_SECRET: "${{ secrets.ASSET_GC_SECRET }}"
+          SUPABASE_SECRET_KEY: "${{ secrets.SUPABASE_SECRET_KEY }}"
+          NEXT_PUBLIC_S3_CDN_URL: "${{ secrets.NEXT_PUBLIC_S3_CDN_URL }}"
+          NEXT_PUBLIC_S3_BUCKET: "${{ secrets.NEXT_PUBLIC_S3_BUCKET }}"
+          NEXT_PUBLIC_S3_REGION: "${{ secrets.NEXT_PUBLIC_S3_REGION }}"
+          NEXT_PUBLIC_S3_ENDPOINT: "${{ secrets.NEXT_PUBLIC_S3_ENDPOINT }}"
+          S3_SECRET_KEY: "${{ secrets.S3_SECRET_KEY }}"
+          S3_ACCESS_KEY: "${{ secrets.S3_ACCESS_KEY }}"
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: "${{ secrets.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}"
+          NEXT_PUBLIC_SUPABASE_URL: "${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}"
+          NEXT_PUBLIC_GISCUS_REPO: "${{ secrets.NEXT_PUBLIC_GISCUS_REPO }}"
+          NEXT_PUBLIC_GISCUS_REPO_ID: "${{ secrets.NEXT_PUBLIC_GISCUS_REPO_ID }}"
+          NEXT_PUBLIC_GISCUS_CATEGORY: "${{ secrets.NEXT_PUBLIC_GISCUS_CATEGORY }}"
+          NEXT_PUBLIC_GISCUS_CATEGORY_ID: "${{ secrets.NEXT_PUBLIC_GISCUS_CATEGORY_ID }}"
+          NEXT_PUBLIC_SITE_URL: "${{ secrets.NEXT_PUBLIC_SITE_URL }}"
+          NEXT_PUBLIC_BASE_URL: "${{ secrets.NEXT_PUBLIC_BASE_URL }}"
+        with:
+          host: ${{ secrets.VM_HOST }}
+          username: ${{ secrets.VM_USER }}
+          key: ${{ secrets.VM_SSH_KEY }}
+          envs: DOCKER_IMAGE,NOTION_CV_PAGE_ID,PROTECTED_EMAIL,CLOUDFLARE_TURNSTILE_SECRET_KEY,JWT_SECRET_KEY,ASSET_GC_SECRET,SUPABASE_SECRET_KEY,NEXT_PUBLIC_S3_CDN_URL,NEXT_PUBLIC_S3_BUCKET,NEXT_PUBLIC_S3_REGION,NEXT_PUBLIC_S3_ENDPOINT,S3_SECRET_KEY,S3_ACCESS_KEY,NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,NEXT_PUBLIC_SUPABASE_URL,NEXT_PUBLIC_GISCUS_REPO,NEXT_PUBLIC_GISCUS_REPO_ID,NEXT_PUBLIC_GISCUS_CATEGORY,NEXT_PUBLIC_GISCUS_CATEGORY_ID,NEXT_PUBLIC_SITE_URL,NEXT_PUBLIC_BASE_URL
+          script: |
+            set -e
+
+            APP_DIR="$HOME/website"
+            COMPOSE_FILE="$APP_DIR/compose.production.yml"
+            COMPOSE_ENV_FILE="$APP_DIR/.env.compose"
+            ENV_FILE="$APP_DIR/.env.runtime"
+
+            docker compose version >/dev/null
             docker login -u "${{ secrets.DOCKER_USERNAME }}" -p "${{ secrets.DOCKER_TOKEN }}"
-            docker pull ${{ secrets.DOCKER_USERNAME }}/website:latest
-            docker stop website || true
-            docker rm website || true
-            docker run -d \
-              --name website \
-              -p 3000:3000 \
-              -e NOTION_CV_PAGE_ID=${{ secrets.NOTION_CV_PAGE_ID }} \
-              -e PROTECTED_EMAIL=${{ secrets.PROTECTED_EMAIL }} \
-              -e CLOUDFLARE_TURNSTILE_SECRET_KEY=${{ secrets.CLOUDFLARE_TURNSTILE_SECRET_KEY }} \
-              -e JWT_SECRET_KEY=${{ secrets.JWT_SECRET_KEY }} \
-              -e ASSET_GC_SECRET=${{ secrets.ASSET_GC_SECRET }} \
-              -e SUPABASE_SECRET_KEY=${{ secrets.SUPABASE_SECRET_KEY }} \
-              -e NEXT_PUBLIC_S3_CDN_URL=${{ secrets.NEXT_PUBLIC_S3_CDN_URL }} \
-              -e NEXT_PUBLIC_S3_BUCKET=${{ secrets.NEXT_PUBLIC_S3_BUCKET }} \
-              -e NEXT_PUBLIC_S3_REGION=${{ secrets.NEXT_PUBLIC_S3_REGION }} \
-              -e NEXT_PUBLIC_S3_ENDPOINT=${{ secrets.NEXT_PUBLIC_S3_ENDPOINT }} \
-              -e S3_SECRET_KEY=${{ secrets.S3_SECRET_KEY }} \
-              -e S3_ACCESS_KEY=${{ secrets.S3_ACCESS_KEY }} \
-              -e NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=${{ secrets.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }} \
-              -e NEXT_PUBLIC_SUPABASE_URL=${{ secrets.NEXT_PUBLIC_SUPABASE_URL }} \
-              -e NEXT_PUBLIC_GISCUS_REPO=${{ secrets.NEXT_PUBLIC_GISCUS_REPO }} \
-              -e NEXT_PUBLIC_GISCUS_REPO_ID=${{ secrets.NEXT_PUBLIC_GISCUS_REPO_ID }} \
-              -e NEXT_PUBLIC_GISCUS_CATEGORY=${{ secrets.NEXT_PUBLIC_GISCUS_CATEGORY }} \
-              -e NEXT_PUBLIC_GISCUS_CATEGORY_ID=${{ secrets.NEXT_PUBLIC_GISCUS_CATEGORY_ID }} \
-              -e NEXT_PUBLIC_SITE_URL=${{ secrets.NEXT_PUBLIC_SITE_URL }} \
-              -e NEXT_PUBLIC_BASE_URL=${{ secrets.NEXT_PUBLIC_BASE_URL }} \
-              -e PDF_RENDER_BASE_URL=${{ secrets.PDF_RENDER_BASE_URL }} \
-              -e GOTENBERG_URL=${{ secrets.GOTENBERG_URL }} \
-              -e GOTENBERG_USERNAME=${{ secrets.GOTENBERG_USERNAME }} \
-              -e GOTENBERG_PASSWORD=${{ secrets.GOTENBERG_PASSWORD }} \
-              --restart=always \
-              ${{ secrets.DOCKER_USERNAME }}/website:latest
+
+            umask 077
+            cat > "$COMPOSE_ENV_FILE" <<EOF
+            DOCKER_IMAGE=${DOCKER_IMAGE}
+            EOF
+
+            cat > "$ENV_FILE" <<EOF
+            NOTION_CV_PAGE_ID=${NOTION_CV_PAGE_ID}
+            PROTECTED_EMAIL=${PROTECTED_EMAIL}
+            CLOUDFLARE_TURNSTILE_SECRET_KEY=${CLOUDFLARE_TURNSTILE_SECRET_KEY}
+            JWT_SECRET_KEY=${JWT_SECRET_KEY}
+            ASSET_GC_SECRET=${ASSET_GC_SECRET}
+            SUPABASE_SECRET_KEY=${SUPABASE_SECRET_KEY}
+            NEXT_PUBLIC_S3_CDN_URL=${NEXT_PUBLIC_S3_CDN_URL}
+            NEXT_PUBLIC_S3_BUCKET=${NEXT_PUBLIC_S3_BUCKET}
+            NEXT_PUBLIC_S3_REGION=${NEXT_PUBLIC_S3_REGION}
+            NEXT_PUBLIC_S3_ENDPOINT=${NEXT_PUBLIC_S3_ENDPOINT}
+            S3_SECRET_KEY=${S3_SECRET_KEY}
+            S3_ACCESS_KEY=${S3_ACCESS_KEY}
+            NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=${NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY}
+            NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
+            NEXT_PUBLIC_GISCUS_REPO=${NEXT_PUBLIC_GISCUS_REPO}
+            NEXT_PUBLIC_GISCUS_REPO_ID=${NEXT_PUBLIC_GISCUS_REPO_ID}
+            NEXT_PUBLIC_GISCUS_CATEGORY=${NEXT_PUBLIC_GISCUS_CATEGORY}
+            NEXT_PUBLIC_GISCUS_CATEGORY_ID=${NEXT_PUBLIC_GISCUS_CATEGORY_ID}
+            NEXT_PUBLIC_SITE_URL=${NEXT_PUBLIC_SITE_URL}
+            NEXT_PUBLIC_BASE_URL=${NEXT_PUBLIC_BASE_URL}
+            EOF
+
+            docker compose --project-name website --env-file "$COMPOSE_ENV_FILE" -f "$COMPOSE_FILE" config >/dev/null
+            docker compose --project-name website --env-file "$COMPOSE_ENV_FILE" -f "$COMPOSE_FILE" pull
+            docker compose --project-name website --env-file "$COMPOSE_ENV_FILE" -f "$COMPOSE_FILE" up -d --remove-orphans
