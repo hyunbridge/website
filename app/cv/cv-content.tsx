@@ -3,8 +3,7 @@
 import "./cv-print.css"
 import { NotionRenderer } from "react-notion-x"
 import "react-notion-x/src/styles.css"
-import { useEffect, useState, useRef } from "react"
-import { CVSkeleton } from "./cv-skeleton"
+import { useEffect, useState, useRef, type ComponentProps } from "react"
 
 // Import required components for NotionRenderer
 import dynamic from "next/dynamic"
@@ -33,21 +32,37 @@ const Equation = dynamic(() => import("react-notion-x/build/third-party/equation
   ssr: false,
 })
 
-type NotionRecordMap = {
-  block?: Record<string, { value?: { last_edited_time?: string | null } }>
+type CVContentProps = {
+  cv: {
+    recordMap?: unknown
+  } | null
 }
 
+type NotionRendererRecordMap = ComponentProps<typeof NotionRenderer>["recordMap"]
+
 // Helper function to get last modified date
-export function getLastModifiedTimestamp(recordMap: NotionRecordMap | null | undefined): string | null {
-  if (!recordMap || !recordMap.block) return null
-  const pageId = Object.keys(recordMap.block)[0]
-  return recordMap.block[pageId]?.value?.last_edited_time || null
+export function getLastModifiedTimestamp(recordMap: unknown): string | null {
+  if (!recordMap || typeof recordMap !== "object" || !("block" in recordMap)) return null
+
+  const block = recordMap.block
+  if (!block || typeof block !== "object") return null
+
+  const pageId = Object.keys(block)[0]
+  const lastEditedTime = (block as Record<string, { value?: { last_edited_time?: string | number | null } } | null | undefined>)[pageId]?.value?.last_edited_time
+
+  return lastEditedTime?.toString() || null
 }
 
 // Format the timestamp to human-readable format
-export function formatLastModified(timestamp: number | null): string {
+export function formatLastModified(timestamp: string | number | null): string {
   if (!timestamp) return "Unknown"
-  const date = new Date(timestamp)
+  const normalizedTimestamp = typeof timestamp === "string" ? Number(timestamp) : timestamp
+  const date = new Date(normalizedTimestamp)
+
+  if (Number.isNaN(date.getTime())) {
+    return "Unknown"
+  }
+
   return date.toLocaleDateString("en-GB", {
     day: "numeric",
     month: "short",
@@ -55,7 +70,7 @@ export function formatLastModified(timestamp: number | null): string {
   })
 }
 
-export function CVContent({ cv }) {
+export function CVContent({ cv }: CVContentProps) {
   const [mounted, setMounted] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
 
@@ -125,29 +140,25 @@ export function CVContent({ cv }) {
     )
   }
 
-  if (mounted) {
-    const lastEditedTimestamp = getLastModifiedTimestamp(currentCv.recordMap)
-    const formattedDate = formatLastModified(lastEditedTimestamp)
+  const lastEditedTimestamp = getLastModifiedTimestamp(currentCv.recordMap)
+  const formattedDate = formatLastModified(lastEditedTimestamp)
 
-    return (
-      <div ref={containerRef} className="notion-container print:notion-container dark:text-white">
-        <NotionRenderer
-          recordMap={currentCv.recordMap}
-          fullPage={false}
-          darkMode={isDarkMode}
-          components={{
-            nextImage: Image,
-            nextLink: Link,
-            Code,
-            Collection,
-            Equation,
-          }}
-          mapPageUrl={(pageId) => `/cv?id=${pageId}`}
-        />
-        <p className="text-sm italic text-muted-foreground">Last updated on {formattedDate}.</p>
-      </div>
-    )
-  }
-
-  return <CVSkeleton />
+  return (
+    <div ref={containerRef} className="notion-container print:notion-container dark:text-white">
+      <NotionRenderer
+        recordMap={currentCv.recordMap as NotionRendererRecordMap}
+        fullPage={false}
+        darkMode={isDarkMode}
+        components={{
+          nextImage: Image,
+          nextLink: Link,
+          Code,
+          Collection,
+          Equation,
+        }}
+        mapPageUrl={(pageId) => `/cv?id=${pageId}`}
+      />
+      <p className="text-sm italic text-muted-foreground">Last updated on {formattedDate}.</p>
+    </div>
+  )
 }

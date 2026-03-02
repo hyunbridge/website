@@ -76,5 +76,9 @@ jobs:
               -e NEXT_PUBLIC_GISCUS_CATEGORY_ID=${{ secrets.NEXT_PUBLIC_GISCUS_CATEGORY_ID }} \
               -e NEXT_PUBLIC_SITE_URL=${{ secrets.NEXT_PUBLIC_SITE_URL }} \
               -e NEXT_PUBLIC_BASE_URL=${{ secrets.NEXT_PUBLIC_BASE_URL }} \
+              -e PDF_RENDER_BASE_URL=${{ secrets.PDF_RENDER_BASE_URL }} \
+              -e GOTENBERG_URL=${{ secrets.GOTENBERG_URL }} \
+              -e GOTENBERG_USERNAME=${{ secrets.GOTENBERG_USERNAME }} \
+              -e GOTENBERG_PASSWORD=${{ secrets.GOTENBERG_PASSWORD }} \
               --restart=always \
               ${{ secrets.DOCKER_USERNAME }}/website:latest

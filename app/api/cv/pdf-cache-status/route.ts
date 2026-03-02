@@ -1,16 +1,23 @@
 import { NextResponse } from "next/server"
-import { getCacheInfo } from "@/lib/pdf-cache"
+import { buildCVPdfObjectKey, getCVLastModified } from "@/lib/cv-pdf"
+import { getCVData } from "@/lib/notion"
+import { isObjectStorageConfigured, objectExists } from "@/lib/object-storage"
 
-/**
- * Simple API to check the status of the PDF cache
- * Can be useful for debugging or monitoring
- */
 export async function GET() {
-  const cacheInfo = getCacheInfo()
-  
+  if (!isObjectStorageConfigured()) {
+    return NextResponse.json({
+      hasCache: false,
+      storageConfigured: false,
+    })
+  }
+
+  const cv = await getCVData()
+  const lastModified = getCVLastModified(cv.recordMap)
+  const objectKey = buildCVPdfObjectKey(lastModified)
+  const hasCache = await objectExists(objectKey)
+
   return NextResponse.json({
-    hasCache: cacheInfo.hasCache,
-    lastCached: cacheInfo.timestamp,
-    lastModified: cacheInfo.lastModified,
+    hasCache,
+    storageConfigured: true,
   })
 }

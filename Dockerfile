@@ -51,34 +51,15 @@ FROM --platform=$TARGETPLATFORM node:22-alpine AS runner
 
 WORKDIR /app
 
-# Install Chromium and dependencies for Puppeteer with arch-specific options
-RUN apk add --no-cache \
-    chromium \
-    nss \
-    freetype \
-    harfbuzz \
-    ca-certificates \
-    dbus \
-    fontconfig
-
-# ARM-specific optimizations and Puppeteer settings
-ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
-    PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser \
-    NODE_ENV=production \
-    PUPPETEER_CACHE_DIR=/app/.cache/puppeteer
+ENV NODE_ENV=production
 
 # Copy Next.js standalone output and static assets
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/public ./public
 
-# Install Pretendard into system font directory from public folder
-RUN mkdir -p /usr/share/fonts/pretendard && \
-    cp /app/public/fonts/*.otf /usr/share/fonts/pretendard/ && \
-    fc-cache -fv
-
-# Create necessary cache directories for Puppeteer
-RUN mkdir -p /app/.cache/puppeteer && chown -R node:node /app
+# Ensure the runtime files are readable by the application user.
+RUN chown -R node:node /app
 
 # Switch to non-root user for better security
 USER node

@@ -44,36 +44,31 @@ export function DownloadButton({ className = "" }) {
       setShowVerification(false)
       setGeneratingPdf(true)
       
-      // Send token to the PDF API
+      // Ask the server for a CDN-backed PDF URL.
       const pdfUrl = `/api/cv/pdf?token=${encodeURIComponent(token)}`
-      
-      // Fetch the PDF as blob instead of opening a new window
+
       const response = await fetch(pdfUrl)
-      
+
       if (!response.ok) {
-        throw new Error(`Error: ${response.status}`)
+        const errorData = await response.json().catch(() => null)
+        throw new Error(errorData?.error || `Error: ${response.status}`)
       }
-      
-      // Convert response to blob
-      const blob = await response.blob()
-      
-      // Create a download link
-      const downloadUrl = window.URL.createObjectURL(blob)
-      const link = document.createElement('a')
-      link.href = downloadUrl
-      link.download = "CV.pdf"
-      
-      // Trigger download
+
+      const data = await response.json()
+      if (!data?.downloadUrl) {
+        throw new Error("Missing download URL")
+      }
+
+      const link = document.createElement("a")
+      link.href = data.downloadUrl
+      link.rel = "noopener"
       document.body.appendChild(link)
       link.click()
       link.remove()
-      
-      // Clean up the URL object
-      window.URL.revokeObjectURL(downloadUrl)
-      
+
       toast({
         title: "Success",
-        description: "PDF downloaded successfully",
+        description: "PDF download started",
       })
     } catch {
       toast({
@@ -127,13 +122,13 @@ export function DownloadButton({ className = "" }) {
           <DialogHeader>
             <DialogTitle>PDF Download</DialogTitle>
             <DialogDescription>
-              Please wait while we generate your PDF.
+              Please wait while we prepare your PDF.
             </DialogDescription>
           </DialogHeader>
           
           <div className="flex flex-col items-center justify-center py-8 space-y-4">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            <p>Generating PDF...</p>
+            <p>Preparing PDF...</p>
           </div>
         </DialogContent>
       </Dialog>

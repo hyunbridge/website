@@ -1,9 +1,13 @@
 import { NextResponse } from "next/server"
 import { verifyTurnstileToken } from "@/app/actions/verify-cv-download"
-import { getCachedPDF, cachePDF } from "@/lib/pdf-cache"
+import { buildCVPdfObjectKey, getCVLastModified, getCVPdfCacheControl, getCVRenderTargetUrl } from "@/lib/cv-pdf"
+import { convertUrlToPdf } from "@/lib/gotenberg"
 import { getCVData } from "@/lib/notion"
+import { getSignedDownloadUrl, isObjectStorageConfigured, objectExists, uploadObject } from "@/lib/object-storage"
 
-// Generate PDF using Puppeteer
+const DOWNLOAD_FILENAME = "CV.pdf"
+const DOWNLOAD_URL_TTL_SECONDS = Number(process.env.CV_PDF_DOWNLOAD_URL_TTL_SECONDS || 60)
+
 export async function GET(request: Request) {
   try {
     // Get Turnstile token from request
@@ -36,76 +40,69 @@ export async function GET(request: Request) {
       )
     }
 
-    // Fetch current CV data to get the last modified timestamp
-    const cv = await getCVData()
-    const pageId = Object.keys(cv.recordMap.block)[0]
-    const lastModifiedTimestamp = cv.recordMap.block[pageId]?.value?.last_edited_time
-    const lastModified = lastModifiedTimestamp ? lastModifiedTimestamp.toString() : null
-
-    // Check if we have a valid cached PDF that matches the current last modified timestamp
-    if (lastModified) {
-      const cachedPDF = getCachedPDF(lastModified)
-      if (cachedPDF) {
-        return new NextResponse(cachedPDF, {
-          status: 200,
-          headers: {
-            "Content-Type": "application/pdf",
-            "Content-Disposition": `attachment; filename="CV.pdf"`,
-            "X-PDF-Cache": "HIT"
-          },
-        })
-      }
+    if (!isObjectStorageConfigured()) {
+      return NextResponse.json(
+        { error: "Object storage is not configured" },
+        { status: 500 }
+      )
     }
 
-    // Set base URL based on environment
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"
-    const targetUrl = `${baseUrl}/cv?print=true`
+    // Fetch current CV data to derive the revisioned object key
+    const cv = await getCVData()
+    const lastModified = getCVLastModified(cv.recordMap)
+    const objectKey = buildCVPdfObjectKey(lastModified)
 
-    // Dynamically import puppeteer at runtime
-    const { default: puppeteer } = await import("puppeteer")
-
-    // Use the system-installed Chromium in Alpine
-    const browser = await puppeteer.launch({
-      args: [
-        "--no-sandbox", 
-        "--disable-setuid-sandbox", 
-        "--disable-dev-shm-usage",
-        "--disable-gpu"
-      ],
-      headless: true,
-      executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined,
-    })
-    
-    const page = await browser.newPage()
-    
-    try {
-      await page.goto(targetUrl, { waitUntil: "networkidle0", timeout: 60000 })
-
-      // Wait for all fonts to be loaded (avoid missing glyphs)
-      await page.evaluate(async () => {
-        await document.fonts.ready
+    if (await objectExists(objectKey)) {
+      const downloadUrl = await getSignedDownloadUrl({
+        key: objectKey,
+        contentDisposition: `attachment; filename="${DOWNLOAD_FILENAME}"`,
+        contentType: "application/pdf",
+        expiresIn: DOWNLOAD_URL_TTL_SECONDS,
       })
 
-      const pdfBytes = await page.pdf({ format: "A4", printBackground: true })
-      const pdfBuffer = Buffer.from(pdfBytes)
-      
-      // Cache the newly generated PDF if we have a valid last modified timestamp
-      if (lastModified) {
-        cachePDF(pdfBuffer, lastModified)
-      }
-      
-      return new NextResponse(pdfBuffer, {
-        status: 200,
+      return NextResponse.json({
+        downloadUrl,
+        source: "cache",
+      }, {
         headers: {
-          "Content-Type": "application/pdf",
-          "Content-Disposition": `attachment; filename="CV.pdf"`,
-          "X-PDF-Cache": "MISS"
+          "Cache-Control": "no-store",
         },
       })
-    } finally {
-      await browser.close()
     }
-  } catch {
+
+    const targetUrl = getCVRenderTargetUrl(request.url)
+    const pdfBuffer = await convertUrlToPdf(targetUrl)
+    await uploadObject({
+      key: objectKey,
+      body: pdfBuffer,
+      contentType: "application/pdf",
+      contentDisposition: `attachment; filename="${DOWNLOAD_FILENAME}"`,
+      cacheControl: getCVPdfCacheControl(lastModified),
+      metadata: {
+        filename: DOWNLOAD_FILENAME,
+        source: "gotenberg",
+        render_url: targetUrl,
+        ...(lastModified ? { revision: lastModified } : {}),
+      },
+    })
+
+    const downloadUrl = await getSignedDownloadUrl({
+      key: objectKey,
+      contentDisposition: `attachment; filename="${DOWNLOAD_FILENAME}"`,
+      contentType: "application/pdf",
+      expiresIn: DOWNLOAD_URL_TTL_SECONDS,
+    })
+
+    return NextResponse.json({
+      downloadUrl,
+      source: "generated",
+    }, {
+      headers: {
+        "Cache-Control": "no-store",
+      },
+    })
+  } catch (error) {
+    console.error("Failed to prepare CV PDF:", error)
     return NextResponse.json(
       { error: "Failed to generate PDF" },
       { status: 500 }
