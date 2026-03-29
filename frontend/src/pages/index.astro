@@ -1,0 +1,29 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro"
+import { HomePageRenderer } from "@/components/home/home-page-renderer"
+import { getEmptyHomePageData, getHomePage } from "@/lib/home-page-service"
+import { getPosts } from "@/lib/blog-service"
+import { getProjects } from "@/lib/project-service"
+
+const homePage = await getHomePage()
+const data = homePage?.data || getEmptyHomePageData()
+const notices = homePage?.notices || [
+  {
+    code: "home-not-published",
+    message: "발행된 홈 구성이 아직 없습니다.",
+  },
+]
+const [projects, posts] = await Promise.all([getProjects(), getPosts(1, 10)])
+---
+
+<BaseLayout
+  title="Hyungyo Seo | Portfolio"
+  description="서현교의 개발자 포트폴리오. Next.js, React, TypeScript를 중심으로 실제 서비스와 AI 기반 워크플로를 설계하고 구현합니다."
+>
+  <HomePageRenderer
+    data={data}
+    notices={notices}
+    projects={projects.slice(0, 6)}
+    posts={posts.slice(0, 6)}
+  />
+</BaseLayout>

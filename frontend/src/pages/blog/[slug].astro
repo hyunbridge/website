@@ -1,0 +1,119 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro"
+import { Badge } from "@shared/components/ui/badge"
+import { BackLink } from "@/components/ui/back-link"
+import { renderMarkdown } from "@shared/lib/markdown"
+
+import { Comments } from "@/components/blog/comments"
+import NotFoundPanel from "@/components/web/NotFoundPanel.astro"
+import { getPostBySlug } from "@/lib/blog-service"
+import { getAllPublishedPostsForBuild } from "@/lib/static-content"
+import { getViewTransitionName } from "@/lib/view-transitions"
+
+export async function getStaticPaths() {
+  const posts = await getAllPublishedPostsForBuild()
+  return posts.map((post) => ({
+    params: { slug: post.slug },
+  }))
+}
+
+const { slug } = Astro.params
+
+if (!slug) {
+  Astro.response.status = 404
+}
+
+const post = slug ? await getPostBySlug(slug) : null
+
+if (!post) Astro.response.status = 404
+
+const displayTitle = post?.title || "게시글을 찾을 수 없음"
+const displayContent = post?.content || ""
+const displayContentHTML = renderMarkdown(displayContent)
+const description = post?.summary || post?.title || "요청한 게시글을 찾을 수 없습니다."
+const authorName = post?.author?.full_name || "익명"
+const formattedDate = post
+  ? new Intl.DateTimeFormat("ko-KR", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    }).format(new Date(post.published_at || post.created_at))
+  : ""
+const transitionImageName = post ? getViewTransitionName("blog", post.id, "image") : ""
+const transitionTitleName = post ? getViewTransitionName("blog", post.id, "title") : ""
+---
+
+<BaseLayout title={`${displayTitle} | Hyungyo Seo`} description={description}>
+  {
+    !post ? (
+      <NotFoundPanel
+        title="게시글을 찾을 수 없습니다"
+        description="요청한 게시글이 없거나 더 이상 공개되지 않습니다."
+        href="/blog"
+        ctaLabel="블로그로 돌아가기"
+      />
+    ) : (
+      <article class="content-article container" transition:animate="fade">
+        <div class="content-article__backlink">
+          <BackLink href="/blog" preferHistoryBack>
+            전체 글로 돌아가기
+          </BackLink>
+        </div>
+
+        {post.cover_image && (
+          <img
+            src={post.cover_image}
+            alt={displayTitle}
+            class="content-article__cover h-64 w-full object-cover md:h-80"
+            style={`view-transition-name:${transitionImageName}`}
+          />
+        )}
+
+        <h1 class="content-article__title" style={`view-transition-name:${transitionTitleName}`}>
+          {displayTitle}
+        </h1>
+
+        <div class="content-article__meta">
+          <div class="flex items-center gap-2">
+            {post.author?.avatar_url ? (
+              <img src={post.author.avatar_url} alt={authorName} class="h-8 w-8 rounded-full" />
+            ) : (
+              <div class="flex h-8 w-8 items-center justify-center rounded-full bg-muted text-sm font-medium">
+                {authorName[0]?.toUpperCase()}
+              </div>
+            )}
+            <span class="text-sm">{authorName}</span>
+          </div>
+
+          <span class="text-sm text-muted-foreground">{formattedDate}</span>
+
+          {(post.tags?.length || 0) > 0 && (
+            <div class="flex flex-wrap gap-2">
+              {post.tags!.map((tag) => (
+                <a href={`/blog/tags/${tag.id}`}>
+                  <Badge variant="secondary" className="transition-colors hover:bg-secondary/80">
+                    {tag.name}
+                  </Badge>
+                </a>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div class="content-article__body">
+          {
+            displayContentHTML ? (
+              <div class="markdown-content" set:html={displayContentHTML} />
+            ) : (
+              <div class="rounded-2xl border border-border/60 bg-card/50 p-6 text-sm text-muted-foreground">
+                본문이 아직 비어 있습니다.
+              </div>
+            )
+          }
+        </div>
+
+        {post.enable_comments && <Comments client:load postId={post.id} />}
+      </article>
+    )
+  }
+</BaseLayout>

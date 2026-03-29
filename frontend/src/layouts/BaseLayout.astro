@@ -1,0 +1,37 @@
+---
+import { ClientRouter } from "astro:transitions"
+import { HeaderShell } from "@/components/web/header-shell"
+import { Toaster } from "@shared/components/ui/toaster"
+import "@/styles/global.css"
+
+interface Props {
+  title?: string
+  description?: string
+}
+
+const { title = "Hyungyo Seo", description = "서현교의 개인 웹사이트" } = Astro.props
+---
+
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link
+      rel="stylesheet"
+      as="style"
+      crossorigin="anonymous"
+      href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css"
+    />
+    <ClientRouter />
+  </head>
+  <body class="bg-background">
+    <HeaderShell client:load />
+    <main class="min-h-screen bg-background pt-16">
+      <slot />
+    </main>
+    <Toaster client:load />
+  </body>
+</html>

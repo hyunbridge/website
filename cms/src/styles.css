@@ -1,0 +1,18 @@
+@import "../../shared/src/styles/content-article.css";
+@import "../../shared/src/styles/markdown-content.css";
+@import "./styles/editor-content.css";
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}

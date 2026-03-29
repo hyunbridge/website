@@ -1,0 +1,30 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro"
+import { NotionCvContent } from "@/components/web/notion-cv-content"
+import { getCVData } from "@/lib/notion"
+
+let cv = null
+let errorMessage = ""
+
+try {
+  cv = await getCVData()
+} catch (error) {
+  errorMessage =
+    error instanceof Error ? error.message : "이력서를 불러오는 중 오류가 발생했습니다."
+}
+---
+
+<BaseLayout title="이력서 | Hyungyo Seo" description="서현교의 이력서">
+  <div class="container py-8 md:py-12">
+    <div class="mx-auto max-w-4xl">
+      <h1 class="mb-6 text-3xl font-bold md:text-4xl">서현교</h1>
+      {
+        errorMessage ? (
+          <div class="text-sm text-destructive">{errorMessage}</div>
+        ) : (
+          <NotionCvContent cv={cv} printMode />
+        )
+      }
+    </div>
+  </div>
+</BaseLayout>

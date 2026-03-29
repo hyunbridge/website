@@ -1,0 +1,139 @@
+openapi: 3.0.3
+info:
+  title: Website API
+  version: 0.1.0
+  description: >
+    Initial Go/Echo API contract for the website split. The first phase covers
+    health, admin authentication, content management, asset operations, and CV jobs.
+servers:
+  - url: http://localhost:8080
+paths:
+  /healthz:
+    get:
+      summary: Readiness probe
+      responses:
+        "200":
+          description: Service is ready
+  /api/v1/system/info:
+    get:
+      summary: Runtime information
+      responses:
+        "200":
+          description: Basic service metadata
+  /api/v1/tags:
+    get:
+      summary: List public tags
+      responses:
+        "200":
+          description: Tag list
+  /api/v1/posts:
+    get:
+      summary: List published posts
+      responses:
+        "200":
+          description: Post summaries
+  /api/v1/posts/{slug}:
+    get:
+      summary: Get a post by slug
+      parameters:
+        - in: path
+          name: slug
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Post detail
+        "404":
+          description: Post not found
+  /api/v1/posts/versions/{versionId}:
+    get:
+      summary: Get a published post snapshot by version ID
+      parameters:
+        - in: path
+          name: versionId
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Published post snapshot
+        "404":
+          description: Version not found or not public
+  /api/v1/projects:
+    get:
+      summary: List published projects
+      responses:
+        "200":
+          description: Project summaries
+  /api/v1/projects/{slug}:
+    get:
+      summary: Get a project by slug
+      parameters:
+        - in: path
+          name: slug
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Project detail
+        "404":
+          description: Project not found
+  /api/v1/projects/versions/{versionId}:
+    get:
+      summary: Get a published project snapshot by version ID
+      parameters:
+        - in: path
+          name: versionId
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Published project snapshot
+        "404":
+          description: Version not found or not public
+  /api/v1/cv/content:
+    get:
+      summary: Get the public CV Notion record map
+      responses:
+        "200":
+          description: CV record map payload
+        "503":
+          description: CV source is not configured
+  /api/v1/admin/login:
+    post:
+      summary: Bootstrap admin login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+                - captchaToken
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  minLength: 8
+                captchaToken:
+                  type: string
+      responses:
+        "200":
+          description: Access token
+        "401":
+          description: Invalid credentials
+  /api/v1/admin/me:
+    get:
+      summary: Read current admin profile
+      responses:
+        "200":
+          description: Authenticated admin profile
+        "401":
+          description: Missing or invalid token

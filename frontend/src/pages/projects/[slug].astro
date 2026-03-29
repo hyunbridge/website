@@ -1,0 +1,145 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro"
+import { Badge } from "@shared/components/ui/badge"
+import { BackLink } from "@/components/ui/back-link"
+import { renderMarkdown } from "@shared/lib/markdown"
+
+import NotFoundPanel from "@/components/web/NotFoundPanel.astro"
+import { getProjectBySlug } from "@/lib/project-service"
+import { getAllPublishedProjectsForBuild } from "@/lib/static-content"
+import { getViewTransitionName } from "@/lib/view-transitions"
+
+export async function getStaticPaths() {
+  const projects = await getAllPublishedProjectsForBuild()
+  return projects.map((project) => ({
+    params: { slug: project.slug || project.id },
+  }))
+}
+
+const { slug } = Astro.params
+
+if (!slug) {
+  Astro.response.status = 404
+}
+
+const project = slug ? await getProjectBySlug(slug) : null
+
+if (!project) Astro.response.status = 404
+
+const displayTitle = project?.title || "프로젝트를 찾을 수 없음"
+const displayContent = project?.content || ""
+const displayContentHTML = renderMarkdown(displayContent)
+const description = project?.summary || project?.title || "요청한 프로젝트를 찾을 수 없습니다."
+const authorName = project?.owner?.full_name || "익명"
+const formattedDate = project
+  ? new Intl.DateTimeFormat("ko-KR", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    }).format(new Date(project.published_at || project.created_at))
+  : ""
+const transitionImageName = project ? getViewTransitionName("project", project.id, "image") : ""
+const transitionTitleName = project ? getViewTransitionName("project", project.id, "title") : ""
+---
+
+<BaseLayout title={`${displayTitle} | Hyungyo Seo`} description={description}>
+  {
+    !project ? (
+      <NotFoundPanel
+        title="프로젝트를 찾을 수 없습니다"
+        description="요청한 프로젝트가 없거나 더 이상 공개되지 않습니다."
+        href="/projects"
+        ctaLabel="프로젝트 목록으로 돌아가기"
+      />
+    ) : (
+      <article class="content-article container" transition:animate="fade">
+        <div class="content-article__backlink">
+          <BackLink href="/projects" preferHistoryBack>
+            전체 프로젝트로 돌아가기
+          </BackLink>
+        </div>
+
+        {project.cover_image && (
+          <img
+            src={project.cover_image}
+            alt={displayTitle}
+            class="content-article__cover h-64 w-full object-cover md:h-80"
+            style={`view-transition-name:${transitionImageName}`}
+          />
+        )}
+
+        <h1 class="content-article__title" style={`view-transition-name:${transitionTitleName}`}>
+          {displayTitle}
+        </h1>
+
+        <div class="content-article__meta">
+          <div class="flex items-center gap-2">
+            {project.owner?.avatar_url ? (
+              <img src={project.owner.avatar_url} alt={authorName} class="h-8 w-8 rounded-full" />
+            ) : (
+              <div class="flex h-8 w-8 items-center justify-center rounded-full bg-muted text-sm font-medium">
+                {authorName[0]?.toUpperCase()}
+              </div>
+            )}
+            <span class="text-sm">{authorName}</span>
+          </div>
+
+          <span class="text-sm text-muted-foreground">{formattedDate}</span>
+
+          {(project.tags?.length || 0) > 0 && (
+            <div class="flex flex-wrap gap-2">
+              {project.tags.map((tag) => (
+                <Badge variant="secondary">{tag.name}</Badge>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div class="content-article__body">
+          {
+            displayContentHTML ? (
+              <div class="markdown-content" set:html={displayContentHTML} />
+            ) : (
+              <div class="rounded-2xl border border-border/60 bg-card/50 p-6 text-sm text-muted-foreground">
+                본문이 아직 비어 있습니다.
+              </div>
+            )
+          }
+        </div>
+
+        {(project.links?.length || 0) > 0 && (
+          <div class="mt-8 border-t pt-6">
+            <h3 class="mb-3 font-medium">링크</h3>
+            <div class="flex flex-wrap gap-2">
+              {project.links.map((link, index) => (
+                <a
+                  href={link.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="inline-flex rounded-full border border-border px-4 py-2 text-sm font-medium"
+                >
+                  {link.label || link.url || `링크 ${index + 1}`}
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div class="mt-12 rounded-2xl border border-border/50 bg-card/50 p-6">
+          <h2 class="text-xl font-semibold">{displayTitle}에 대해 궁금한 점이 있나요?</h2>
+          <p class="mt-2 text-muted-foreground">
+            프로젝트에 대해 더 자세히 알고 싶다면 편하게 연락해주세요.
+          </p>
+          <div class="mt-4">
+            <a
+              href="/contact"
+              class="inline-flex rounded-full bg-foreground px-4 py-2 text-sm font-medium text-background"
+            >
+              연락하기
+            </a>
+          </div>
+        </div>
+      </article>
+    )
+  }
+</BaseLayout>

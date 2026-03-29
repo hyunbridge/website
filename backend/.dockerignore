@@ -1,0 +1,11 @@
+.git
+.gitignore
+.env
+.env.*
+data/
+tmp/
+dist/
+bin/
+coverage/
+mapae/
+README.md

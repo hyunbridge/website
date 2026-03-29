@@ -1,0 +1,28 @@
+{
+  "name": "hgseo-website",
+  "private": true,
+  "packageManager": "pnpm@10.33.0",
+  "scripts": {
+    "dev:backend": "cd backend && go run ./cmd/api",
+    "dev:frontend": "pnpm --dir frontend dev",
+    "dev:cms": "pnpm --dir cms dev",
+    "build:backend": "cd backend && go build ./...",
+    "build:frontend": "pnpm --dir frontend build",
+    "build:cms": "pnpm --dir cms build",
+    "check:cms": "pnpm --dir cms build",
+    "check:frontend": "pnpm --dir frontend check",
+    "test:backend": "cd backend && go test ./...",
+    "verify": "pnpm test:backend && pnpm check:cms && pnpm check:frontend",
+    "format": "pnpm format:go && pnpm format:web",
+    "format:check": "pnpm format:check:go && pnpm format:check:web",
+    "format:go": "cd backend && find . -name '*.go' -not -path './vendor/*' -exec go tool gofumpt -w {} +",
+    "format:check:go": "cd backend && test -z \"$(find . -name '*.go' -not -path './vendor/*' -exec go tool gofumpt -l {} +)\"",
+    "format:web": "prettier --write .",
+    "format:check:web": "prettier --check ."
+  },
+  "devDependencies": {
+    "prettier": "^3.8.1",
+    "prettier-plugin-astro": "^0.14.1",
+    "vite": "^7.3.1"
+  }
+}

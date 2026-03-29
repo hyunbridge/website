@@ -1,0 +1,22 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro"
+import { PostList } from "@/components/blog/post-list"
+import { buildApiUrl } from "@/lib/api-client"
+import { getPosts } from "@/lib/blog-service"
+
+const posts = await getPosts(1, 10)
+---
+
+<BaseLayout
+  title="블로그 | Hyungyo Seo"
+  description="웹 개발, 기술, 그리고 작업 과정에 대한 글을 읽어보세요."
+>
+  <div class="container py-8 md:py-12" transition:animate="fade">
+    <h1 class="mb-8 text-3xl font-bold md:text-4xl">블로그</h1>
+    <PostList
+      client:load
+      initialPosts={posts.slice(0, 10)}
+      nextPageBasePath={buildApiUrl("/posts")}
+    />
+  </div>
+</BaseLayout>
