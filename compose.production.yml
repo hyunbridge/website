@@ -1,0 +1,9 @@
+services:
+  backend:
+    image: hyunbridge/website-backend:latest
+    container_name: website-backend
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env.runtime
