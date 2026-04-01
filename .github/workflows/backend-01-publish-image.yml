@@ -1,6 +1,10 @@
 name: Publish Backend Image
 
 on:
+  pull_request:
+    paths:
+      - "backend/**"
+      - ".github/workflows/backend-01-publish-image.yml"
   push:
     branches:
       - main
@@ -13,17 +17,62 @@ permissions:
   contents: read
 
 concurrency:
-  group: publish-backend-image
+  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  publish:
+  verify:
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: 1.94.1
+
+      - name: Restore Cargo cache
+        uses: actions/cache@v5
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            backend/target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('backend/Cargo.lock', 'backend/Cargo.toml', 'backend/rust-toolchain.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+
+      - name: Verify backend
+        working-directory: backend
+        run: |
+          set -euo pipefail
+          cargo fmt --all --check
+          cargo test --locked --all-targets --quiet
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Verify backend image build
+        uses: docker/build-push-action@v7
+        with:
+          context: ./backend
+          file: ./backend/Dockerfile
+          platforms: linux/amd64
+          push: false
+          cache-from: type=gha,scope=backend-image
+
+  publish:
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    needs: verify
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
 
       - name: Validate required secrets
         env:
@@ -33,27 +82,34 @@ jobs:
           test -n "$DOCKER_TOKEN" || { echo "DOCKER_TOKEN is required"; exit 1; }
 
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
+        uses: docker/setup-qemu-action@v4
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
       - name: Log in to Docker Hub
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           username: hyunbridge
           password: ${{ secrets.DOCKER_TOKEN }}
 
+      - name: Extract image metadata
+        id: meta
+        uses: docker/metadata-action@v6
+        with:
+          images: hyunbridge/website-backend
+          tags: |
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=sha,format=long
+
       - name: Build and push backend image
-        env:
-          IMAGE_REPOSITORY: hyunbridge/website-backend
-          IMAGE_SHA: ${{ github.sha }}
-        run: |
-          set -euo pipefail
-          docker buildx build \
-            --platform linux/amd64,linux/arm64 \
-            --file backend/Dockerfile \
-            --tag "${IMAGE_REPOSITORY}:latest" \
-            --tag "${IMAGE_REPOSITORY}:${IMAGE_SHA}" \
-            backend \
-            --push
+        uses: docker/build-push-action@v7
+        with:
+          context: ./backend
+          file: ./backend/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=backend-image
+          cache-to: type=gha,scope=backend-image,mode=max

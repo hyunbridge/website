@@ -3,37 +3,82 @@ info:
   title: Website API
   version: 0.1.0
   description: >
-    Initial Go/Echo API contract for the website split. The first phase covers
-    health, admin authentication, content management, asset operations, and CV jobs.
+    Rust/Axum API contract for the website backend. The server exposes public
+    content APIs, admin CMS APIs, asset operations, CV endpoints, and deploy hooks.
 servers:
   - url: http://localhost:8080
+tags:
+  - name: Health
+  - name: System
+  - name: Public Content
+  - name: Contact
+  - name: CV
+  - name: Admin Auth
+  - name: Admin Content
+  - name: Admin Home
+  - name: Admin Profile
+  - name: Admin Deploy
+  - name: Assets
+  - name: Integrations
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
 paths:
   /healthz:
     get:
+      tags: [Health]
       summary: Readiness probe
+      responses:
+        "200":
+          description: Service is ready
+  /api/v1/healthz:
+    get:
+      tags: [Health]
+      summary: Versioned readiness probe
       responses:
         "200":
           description: Service is ready
   /api/v1/system/info:
     get:
+      tags: [System]
       summary: Runtime information
       responses:
         "200":
           description: Basic service metadata
+  /api/v1/site/export:
+    get:
+      tags: [Public Content]
+      summary: Get the published site export snapshot
+      responses:
+        "200":
+          description: Site export payload
+  /api/v1/site/home:
+    get:
+      tags: [Public Content]
+      summary: Get the published home document
+      responses:
+        "200":
+          description: Home document
   /api/v1/tags:
     get:
+      tags: [Public Content]
       summary: List public tags
       responses:
         "200":
           description: Tag list
   /api/v1/posts:
     get:
+      tags: [Public Content]
       summary: List published posts
       responses:
         "200":
           description: Post summaries
   /api/v1/posts/{slug}:
     get:
+      tags: [Public Content]
       summary: Get a post by slug
       parameters:
         - in: path
@@ -48,6 +93,7 @@ paths:
           description: Post not found
   /api/v1/posts/versions/{versionId}:
     get:
+      tags: [Public Content]
       summary: Get a published post snapshot by version ID
       parameters:
         - in: path
@@ -62,12 +108,14 @@ paths:
           description: Version not found or not public
   /api/v1/projects:
     get:
+      tags: [Public Content]
       summary: List published projects
       responses:
         "200":
           description: Project summaries
   /api/v1/projects/{slug}:
     get:
+      tags: [Public Content]
       summary: Get a project by slug
       parameters:
         - in: path
@@ -82,6 +130,7 @@ paths:
           description: Project not found
   /api/v1/projects/versions/{versionId}:
     get:
+      tags: [Public Content]
       summary: Get a published project snapshot by version ID
       parameters:
         - in: path
@@ -94,17 +143,71 @@ paths:
           description: Published project snapshot
         "404":
           description: Version not found or not public
+  /api/v1/contact/verify-turnstile:
+    post:
+      tags: [Contact]
+      summary: Verify Turnstile and issue a protected-email token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [token]
+              properties:
+                token:
+                  type: string
+      responses:
+        "200":
+          description: Verification succeeded
+  /api/v1/contact/email-status:
+    get:
+      tags: [Contact]
+      summary: Validate a protected-email token
+      parameters:
+        - in: query
+          name: token
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Token validation result
+        "400":
+          description: Missing token
   /api/v1/cv/content:
     get:
+      tags: [CV]
       summary: Get the public CV Notion record map
       responses:
         "200":
           description: CV record map payload
         "503":
           description: CV source is not configured
+  /api/v1/cv/pdf:
+    get:
+      tags: [CV]
+      summary: Get or generate the CV PDF
+      parameters:
+        - in: query
+          name: token
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Cached download URL or inline PDF response
+  /api/v1/cv/pdf-cache-status:
+    get:
+      tags: [CV]
+      summary: Inspect CV PDF cache status
+      responses:
+        "200":
+          description: Cache status payload
   /api/v1/admin/login:
     post:
-      summary: Bootstrap admin login
+      tags: [Admin Auth]
+      summary: Admin login
       requestBody:
         required: true
         content:
@@ -131,9 +234,614 @@ paths:
           description: Invalid credentials
   /api/v1/admin/me:
     get:
+      tags: [Admin Auth]
       summary: Read current admin profile
+      security:
+        - bearerAuth: []
       responses:
         "200":
           description: Authenticated admin profile
         "401":
           description: Missing or invalid token
+  /api/v1/admin/dashboard:
+    get:
+      tags: [Admin Auth]
+      summary: Read admin dashboard counters
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Dashboard payload
+  /api/v1/assets/presign:
+    post:
+      tags: [Assets]
+      summary: Create a presigned upload URL
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Presigned upload payload
+  /api/v1/assets/complete:
+    post:
+      tags: [Assets]
+      summary: Mark an uploaded object as attached to a resource
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Asset completion succeeded
+  /api/v1/assets/delete:
+    post:
+      tags: [Assets]
+      summary: Delete objects from object storage
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Delete result
+  /api/v1/admin/posts:
+    get:
+      tags: [Admin Content]
+      summary: List admin posts
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: includeDraft
+          required: false
+          schema:
+            type: boolean
+      responses:
+        "200":
+          description: Post list
+    post:
+      tags: [Admin Content]
+      summary: Create a post draft
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Created post
+  /api/v1/admin/posts/{id}:
+    get:
+      tags: [Admin Content]
+      summary: Get a post by internal ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Post detail
+    patch:
+      tags: [Admin Content]
+      summary: Update a post draft
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Updated post
+    delete:
+      tags: [Admin Content]
+      summary: Delete a post
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Delete result
+  /api/v1/admin/posts/{id}/publish:
+    post:
+      tags: [Admin Content]
+      summary: Publish a post
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Publish result
+    delete:
+      tags: [Admin Content]
+      summary: Unpublish a post
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Unpublish result
+  /api/v1/admin/posts/{id}/version-state:
+    get:
+      tags: [Admin Content]
+      summary: Read post version state
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Version state
+  /api/v1/admin/posts/versions:
+    post:
+      tags: [Admin Content]
+      summary: Create a post version snapshot
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Created post version
+  /api/v1/admin/posts/versions/{versionId}:
+    get:
+      tags: [Admin Content]
+      summary: Get a post version
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: versionId
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Post version
+    patch:
+      tags: [Admin Content]
+      summary: Update a post version
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: versionId
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Updated post version
+  /api/v1/admin/posts/{id}/current-version:
+    post:
+      tags: [Admin Content]
+      summary: Set the current post version
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Updated post
+  /api/v1/admin/posts/{id}/versions:
+    get:
+      tags: [Admin Content]
+      summary: List versions for a post
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Post versions
+  /api/v1/admin/posts/{id}/restore:
+    post:
+      tags: [Admin Content]
+      summary: Restore a post from a previous version
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Restored post
+  /api/v1/admin/projects:
+    get:
+      tags: [Admin Content]
+      summary: List admin projects
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: includeDraft
+          required: false
+          schema:
+            type: boolean
+      responses:
+        "200":
+          description: Project list
+    post:
+      tags: [Admin Content]
+      summary: Create a project draft
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Created project
+  /api/v1/admin/projects/{id}:
+    get:
+      tags: [Admin Content]
+      summary: Get a project by internal ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Project detail
+    patch:
+      tags: [Admin Content]
+      summary: Update a project draft
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Updated project
+    delete:
+      tags: [Admin Content]
+      summary: Delete a project
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Delete result
+  /api/v1/admin/projects/{id}/publish:
+    post:
+      tags: [Admin Content]
+      summary: Publish a project
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Publish result
+    delete:
+      tags: [Admin Content]
+      summary: Unpublish a project
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Unpublish result
+  /api/v1/admin/projects/{id}/version-state:
+    get:
+      tags: [Admin Content]
+      summary: Read project version state
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Version state
+  /api/v1/admin/projects/versions:
+    post:
+      tags: [Admin Content]
+      summary: Create a project version snapshot
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Created project version
+  /api/v1/admin/projects/versions/{versionId}:
+    get:
+      tags: [Admin Content]
+      summary: Get a project version
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: versionId
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Project version
+    patch:
+      tags: [Admin Content]
+      summary: Update a project version
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: versionId
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Updated project version
+  /api/v1/admin/projects/{id}/current-version:
+    post:
+      tags: [Admin Content]
+      summary: Set the current project version
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Updated project
+  /api/v1/admin/projects/{id}/versions:
+    get:
+      tags: [Admin Content]
+      summary: List versions for a project
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Project versions
+  /api/v1/admin/projects/{id}/restore:
+    post:
+      tags: [Admin Content]
+      summary: Restore a project from a previous version
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Restored project
+  /api/v1/admin/tags:
+    get:
+      tags: [Admin Content]
+      summary: List admin tags
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Tag list
+    post:
+      tags: [Admin Content]
+      summary: Create a tag
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Created tag
+  /api/v1/admin/tags/{id}:
+    patch:
+      tags: [Admin Content]
+      summary: Update a tag
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Updated tag
+    delete:
+      tags: [Admin Content]
+      summary: Delete a tag
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Delete result
+  /api/v1/admin/home:
+    get:
+      tags: [Admin Home]
+      summary: Read the admin home document
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Home document
+  /api/v1/admin/home/save:
+    post:
+      tags: [Admin Home]
+      summary: Save the home draft payload
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Updated home document
+  /api/v1/admin/home/current-version:
+    post:
+      tags: [Admin Home]
+      summary: Save the current home draft as a version
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Updated home document
+  /api/v1/admin/home/versions:
+    get:
+      tags: [Admin Home]
+      summary: List home versions
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Home versions
+  /api/v1/admin/home/restore:
+    post:
+      tags: [Admin Home]
+      summary: Restore a previous home version
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Restored home document
+  /api/v1/admin/profile:
+    get:
+      tags: [Admin Profile]
+      summary: Read the current admin profile
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Admin profile
+    patch:
+      tags: [Admin Profile]
+      summary: Update the current admin profile
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Updated admin profile
+  /api/v1/admin/profile/password:
+    post:
+      tags: [Admin Profile]
+      summary: Change the primary admin password
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Password updated
+  /api/v1/admin/deploy:
+    get:
+      tags: [Admin Deploy]
+      summary: Read deploy dashboard
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Deploy dashboard
+  /api/v1/admin/deploy/preview:
+    get:
+      tags: [Admin Deploy]
+      summary: Read deploy preview
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Deploy preview
+  /api/v1/admin/deploy/sync:
+    post:
+      tags: [Admin Deploy]
+      summary: Trigger deploy synchronization
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Deploy dashboard
+  /api/v1/admin/publish:
+    get:
+      tags: [Admin Deploy]
+      summary: Alias of the deploy dashboard
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Deploy dashboard
+  /api/v1/admin/publish/preview:
+    get:
+      tags: [Admin Deploy]
+      summary: Alias of the deploy preview
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Deploy preview
+  /api/v1/admin/publish/sync:
+    post:
+      tags: [Admin Deploy]
+      summary: Alias of deploy synchronization
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Deploy dashboard
+  /api/v1/integrations/cloudflare/pages/deploy-webhook:
+    post:
+      tags: [Integrations]
+      summary: Accept a Cloudflare Pages deploy webhook
+      responses:
+        "202":
+          description: Webhook accepted
+        "401":
+          description: Invalid webhook secret

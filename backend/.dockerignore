@@ -9,8 +9,8 @@ db/
 migrations/
 bin/
 dist/
+target/
 tmp/
 data/
 coverage/
 coverage.out
-*_test.go

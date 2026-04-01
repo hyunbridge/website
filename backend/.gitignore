@@ -2,4 +2,5 @@
 .air.toml
 bin/
 dist/
+target/
 coverage.out
