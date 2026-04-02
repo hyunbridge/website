@@ -18,7 +18,7 @@ permissions:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   verify:
@@ -55,6 +55,12 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
 
+      - name: Extract image metadata
+        id: meta
+        uses: docker/metadata-action@v6
+        with:
+          images: hyunbridge/website-backend
+
       - name: Verify backend image build
         uses: docker/build-push-action@v7
         with:
@@ -62,13 +68,27 @@ jobs:
           file: ./backend/Dockerfile
           platforms: linux/amd64
           push: false
-          cache-from: type=gha,scope=backend-image
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=backend-image-amd64
 
-  publish:
+  build:
     if: github.event_name != 'pull_request'
-    runs-on: ubuntu-latest
-    timeout-minutes: 45
     needs: verify
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: linux/amd64
+            runner: ubuntu-latest
+            suffix: amd64
+            cache_scope: backend-image-amd64
+          - platform: linux/arm64
+            runner: ubuntu-24.04-arm
+            suffix: arm64
+            cache_scope: backend-image-arm64
+
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 60
 
     steps:
       - name: Checkout repository
@@ -80,9 +100,6 @@ jobs:
         run: |
           set -euo pipefail
           test -n "$DOCKER_TOKEN" || { echo "DOCKER_TOKEN is required"; exit 1; }
-
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v4
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
@@ -98,18 +115,69 @@ jobs:
         uses: docker/metadata-action@v6
         with:
           images: hyunbridge/website-backend
-          tags: |
-            type=raw,value=latest,enable={{is_default_branch}}
-            type=sha,format=long
 
-      - name: Build and push backend image
+      - name: Build and push single-platform image
         uses: docker/build-push-action@v7
         with:
           context: ./backend
           file: ./backend/Dockerfile
-          platforms: linux/amd64,linux/arm64
+          platforms: ${{ matrix.platform }}
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
+          tags: hyunbridge/website-backend:build-${{ github.sha }}-${{ matrix.suffix }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha,scope=backend-image
-          cache-to: type=gha,scope=backend-image,mode=max
+          cache-from: type=gha,scope=${{ matrix.cache_scope }}
+          cache-to: type=gha,scope=${{ matrix.cache_scope }},mode=max
+
+  merge-manifest:
+    if: github.event_name != 'pull_request'
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Validate required secrets
+        env:
+          DOCKER_TOKEN: ${{ secrets.DOCKER_TOKEN }}
+        run: |
+          set -euo pipefail
+          test -n "$DOCKER_TOKEN" || { echo "DOCKER_TOKEN is required"; exit 1; }
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v4
+        with:
+          username: hyunbridge
+          password: ${{ secrets.DOCKER_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Extract image metadata
+        id: meta
+        uses: docker/metadata-action@v6
+        with:
+          images: hyunbridge/website-backend
+          tags: |
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=sha,format=long
+
+      - name: Create multi-arch manifest
+        env:
+          TAGS: ${{ steps.meta.outputs.tags }}
+        run: |
+          set -euo pipefail
+
+          tag_args=()
+          while IFS= read -r tag; do
+            [ -n "$tag" ] || continue
+            tag_args+=("-t" "$tag")
+          done <<< "$TAGS"
+
+          docker buildx imagetools create \
+            "${tag_args[@]}" \
+            hyunbridge/website-backend:build-${GITHUB_SHA}-amd64 \
+            hyunbridge/website-backend:build-${GITHUB_SHA}-arm64
+
+      - name: Inspect merged manifest
+        run: |
+          set -euo pipefail
+          docker buildx imagetools inspect hyunbridge/website-backend:sha-${GITHUB_SHA}
